@@ -23,7 +23,7 @@ No server or database needed — perfect for chatting with friends on the same W
 
 ## 📁 Live Demo
 
-[Click here to view the live app](https://saikishorr.github.io/chat)
+<a href="https://saikishorr.github.io/chat" target="_blank">Click here to view the live app</a>
 
 ---
 
