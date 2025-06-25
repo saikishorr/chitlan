@@ -1,42 +1,23 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ephemeral P2P Chat</title>
-    <link rel="stylesheet" href="style.css">
-    <script src="peerjs.min.js"></script>
+  <meta charset="UTF-8">
+  <title>P2P Chat - Local</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="container">
-        <h1>Ephemeral P2P Chat</h1>
-        <p class="description">
-            This chat is peer-to-peer and does not store any data.
-            When you close the tab, your chat history is gone.
-        </p>
+  <h1>Peer-to-Peer Chat</h1>
 
-        <div class="peer-id-section">
-            <label for="my-id">Your Peer ID:</label>
-            <input type="text" id="my-id" readonly>
-            <button id="copy-my-id">Copy ID</button>
-        </div>
+  <textarea id="chat" readonly></textarea>
+  <input id="message" placeholder="Type a message..." />
+  <button onclick="sendMessage()">Send</button>
 
-        <div class="connection-section">
-            <label for="peer-id-input">Connect to Peer ID:</label>
-            <input type="text" id="peer-id-input" placeholder="Enter friend's Peer ID">
-            <button id="connect-button">Connect</button>
-        </div>
+  <h3>Signal Exchange</h3>
+  <textarea id="yourSignal" placeholder="Your Signal (copy & share)"></textarea>
+  <textarea id="remoteSignal" placeholder="Paste friend's Signal here"></textarea>
+  <button onclick="connect()">Connect</button>
 
-        <div class="chat-section">
-            <div id="messages" class="messages">
-                </div>
-            <div class="message-input-area">
-                <input type="text" id="message-input" placeholder="Type your message...">
-                <button id="send-button" disabled>Send</button>
-            </div>
-        </div>
-    </div>
-
-    <script src="script.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/simple-peer@9/simplepeer.min.js"></script>
+  <script src="script.js"></script>
 </body>
 </html>
