@@ -22,7 +22,7 @@
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/yourusername/chitlan.git
+git clone https://github.com/saikishorr/chitlan.git
 cd chitlan
 2. Open or Deploy
 Open index.html in a browser locally OR
