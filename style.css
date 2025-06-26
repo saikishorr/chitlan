@@ -1,8 +1,31 @@
+/* Updated style.css for improved layout, message alignment, and dark mode toggle */
+
+:root {
+  --bg-light: #f9f9f9;
+  --bg-dark: #121212;
+  --text-light: #000;
+  --text-dark: #fff;
+  --input-bg-light: #fff;
+  --input-bg-dark: #1e1e1e;
+  --msg-left-bg-light: #fff;
+  --msg-left-bg-dark: #2a2a2a;
+  --msg-right-bg: #d1e7ff;
+  --border-color-light: #ccc;
+  --border-color-dark: #444;
+}
+
 body {
   font-family: sans-serif;
   padding: 20px;
-  background: #f9f9f9;
+  background: var(--bg-light);
+  color: var(--text-light);
   margin: 0;
+  transition: background 0.3s, color 0.3s;
+}
+
+body.dark {
+  background: var(--bg-dark);
+  color: var(--text-dark);
 }
 
 h1 {
@@ -13,46 +36,210 @@ h1 {
 
 .form-group {
   margin-bottom: 15px;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 input, button {
   padding: 10px;
   margin: 5px 0;
-  width: 100%;
   box-sizing: border-box;
   font-size: 1em;
+  border-radius: 5px;
+  border: 1px solid var(--border-color-light);
+  transition: background 0.3s, color 0.3s;
+}
+
+body.dark input, body.dark button {
+  background: var(--input-bg-dark);
+  color: var(--text-dark);
+  border: 1px solid var(--border-color-dark);
+}
+
+#chat-ui {
+  max-width: 900px;
+  margin: 20px auto;
+}
+
+.chat-container {
+  display: flex;
+  gap: 20px;
+}
+
+#user-list {
+  width: 200px;
+  background-color: var(--input-bg-light);
+  border: 1px solid var(--border-color-light);
+  padding: 10px;
+  border-radius: 5px;
+  height: 300px;
+  overflow-y: auto;
+}
+
+body.dark #user-list {
+  background-color: var(--input-bg-dark);
+  border-color: var(--border-color-dark);
+}
+
+#user-list ul {
+  list-style: none;
+  padding-left: 0;
+}
+
+#user-list li {
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+#user-list .dot {
+  width: 10px;
+  height: 10px;
+  background-color: green;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.chat-box {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 #messages {
   height: 250px;
-  background: #eee;
+  background: var(--input-bg-light);
   padding: 10px;
   overflow-y: auto;
-  margin-bottom: 10px;
   border-radius: 5px;
-}
-
-#chat-ui {
-  max-width: 600px;
-  margin: auto;
-}
-
-.radio {
+  margin-bottom: 10px;
   display: flex;
-  justify-content: space-around;
-  margin-top: 5px;
+  flex-direction: column;
+  gap: 10px;
 }
 
-@media (max-width: 600px) {
-  #chat-ui, .form-group {
-    padding: 10px;
-  }
+body.dark #messages {
+  background: var(--input-bg-dark);
+}
 
-  input, button {
-    font-size: 1em;
-  }
+.message {
+  max-width: 70%;
+  padding: 8px 12px;
+  border-radius: 10px;
+  word-wrap: break-word;
+  white-space: pre-line;
+  font-size: 0.95em;
+}
 
-  .radio {
+.message.right {
+  align-self: flex-end;
+  background-color: var(--msg-right-bg);
+  text-align: right;
+  margin-left: auto;
+}
+
+.message.left {
+  align-self: flex-start;
+  background-color: var(--msg-left-bg-light);
+  text-align: left;
+  margin-right: auto;
+  border: 1px solid var(--border-color-light);
+}
+
+body.dark .message.left {
+  background-color: var(--msg-left-bg-dark);
+  border-color: var(--border-color-dark);
+}
+
+.message strong {
+  display: block;
+  font-weight: bold;
+  margin-bottom: 4px;
+}
+
+.input-group {
+  display: flex;
+  gap: 10px;
+}
+
+.input-group input {
+  flex: 1;
+  padding: 10px;
+  font-size: 1em;
+  border-radius: 5px;
+  border: 1px solid var(--border-color-light);
+}
+
+.input-group button {
+  padding: 10px 20px;
+  font-size: 1em;
+  border-radius: 5px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  cursor: pointer;
+}
+
+.input-group button:hover {
+  background-color: #0056b3;
+}
+
+.theme-toggle {
+  position: fixed;
+  top: 15px;
+  right: 15px;
+  background: #007bff;
+  color: white;
+  padding: 6px 12px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  z-index: 1000;
+}
+
+@media (max-width: 768px) {
+  .chat-container {
     flex-direction: column;
   }
+
+  #user-list {
+    width: 100%;
+    margin-bottom: 10px;
+    height: auto;
+  }
+} 
+
+label {
+  display: block;
+  margin-top: 10px;
+  font-weight: bold;
+}
+
+input[type="text"],
+input[type="color"],
+select {
+  width: 100%;
+  padding: 10px;
+  margin-top: 5px;
+  margin-bottom: 10px;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+  box-sizing: border-box;
+  font-size: 1em;
+  background-color: #fff;
+  color: #000;
+}
+
+body.dark input[type="text"],
+body.dark input[type="color"],
+body.dark select {
+  background-color: #333;
+  color: #eee;
+  border-color: #555;
+}
+
+select option {
+  padding: 10px;
 }
