@@ -1,7 +1,22 @@
 # 💬 ChitLAN – Talk freely on your local network
 
 **ChitLAN** is a lightweight, peer-to-peer group chat application designed for local area networks (LAN). No server, no internet — just simple and secure real-time messaging with your friends on the same network.
+
  
+![PHP](https://img.shields.io/badge/PHP-8.1+-blue)
+![License](https://img.shields.io/badge/license-MIT-green)
+![PeerJS](https://img.shields.io/badge/peerjs-1.5.5-yellow)
+![Status](https://img.shields.io/badge/status-active-brightgreen)
+![Version](https://img.shields.io/github/v/release/saikishorr/chitlan?label=version)
+![Commits](https://img.shields.io/github/commit-activity/m/saikishorr/chitlan)
+![Last Commit](https://img.shields.io/github/last-commit/saikishorr/chitlan)
+![Platform](https://img.shields.io/badge/platform-browser%20only-lightgrey)
+![WebRTC](https://img.shields.io/badge/tech-WebRTC-red)
+![Responsive](https://img.shields.io/badge/mobile%20friendly-yes-orange)
+
+<!-- ![Issues](https://img.shields.io/github/issues/saikishorr/chitlan)
+![Pull Requests](https://img.shields.io/github/issues-pr/saikishorr/chitlan)-->
+
 ---
 
 ## 🚀 Features
