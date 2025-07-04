@@ -7,13 +7,22 @@ let isHost = false;
 let myNickname = '';
 let myColor = '';
 
+function generateNumericIdWithPrefix() {
+  const num = Math.floor(1000 + Math.random() * 9000); // Ensures 4 digits
+  return `CH-${num}`;
+}
+
+
+
+
 function init() {
   myNickname = document.getElementById('nickname').value.trim();
   myColor = document.getElementById('color').value;
   if (!myNickname) return alert("Please enter your nickname.");
 
   isHost = document.querySelector('input[name="role"]:checked').value === 'host';
-  peer = new Peer();
+  // peer = new Peer();
+peer = new Peer(generateNumericIdWithPrefix());
 
   peer.on('open', id => {
     document.getElementById('peer-id').value = id;
