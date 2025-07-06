@@ -1,42 +1,64 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ephemeral P2P Chat</title>
-    <link rel="stylesheet" href="style.css">
-    <script src="peerjs.min.js"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chitlan</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-    <div class="container">
-        <h1>Ephemeral P2P Chat</h1>
-        <p class="description">
-            This chat is peer-to-peer and does not store any data.
-            When you close the tab, your chat history is gone.
-        </p>
+  <button class="theme-toggle" onclick="toggleTheme()">Black/White</button>
 
-        <div class="peer-id-section">
-            <label for="my-id">Your Peer ID:</label>
-            <input type="text" id="my-id" readonly>
-            <button id="copy-my-id">Copy ID</button>
-        </div>
+  <audio id="notificationSound" src="https://assets.mixkit.co/sfx/preview/mixkit-clear-announce-tones-2861.mp3" preload="auto"></audio>
 
-        <div class="connection-section">
-            <label for="peer-id-input">Connect to Peer ID:</label>
-            <input type="text" id="peer-id-input" placeholder="Enter friend's Peer ID">
-            <button id="connect-button">Connect</button>
-        </div>
+  <h1>ChitLAN – Talk freely on your local network</h1>
 
-        <div class="chat-section">
-            <div id="messages" class="messages">
-                </div>
-            <div class="message-input-area">
-                <input type="text" id="message-input" placeholder="Type your message...">
-                <button id="send-button" disabled>Send</button>
-            </div>
-        </div>
+  <div class="form-group">
+    <input id="nickname" placeholder="Enter your nickname" />
+    <label for="color">Choose Color:</label>
+    <select id="color">
+      <option value="#007bff" style="color: #007bff">Blue</option>
+      <option value="#28a745" style="color: #28a745">Green</option>
+      <option value="#dc3545" style="color: #dc3545">Red</option>
+      <option value="#ffc107" style="color: #ffc107">Yellow</option>
+      <option value="#17a2b8" style="color: #17a2b8">Cyan</option>
+      <option value="#6610f2" style="color: #6610f2">Purple</option>
+      <option value="#fd7e14" style="color: #fd7e14">Orange</option>
+      <option value="#6c757d" style="color: #6c757d">Gray</option>
+      <option value="#343a40" style="color: #343a40">Dark</option>
+      <option value="#e83e8c" style="color: #e83e8c">Pink</option>
+    </select>
+
+    <div class="radio">
+      <label><input type="radio" name="role" value="host" checked> Host Room</label>
+      <label><input type="radio" name="role" value="joiner"> Join Room</label>
     </div>
+    <button onclick="init()">Start</button>
+  </div>
 
-    <script src="script.js"></script>
+  <div class="form-group">
+    <input id="peer-id" readonly placeholder="Your Peer ID (Share if host)" />
+    <input id="connect-id" placeholder="Host's Peer ID (if joining)" />
+    <button onclick="connectToHost()">Connect</button>
+  </div>
+
+  <div id="chat-ui" style="display: none;">
+    <div class="chat-container">
+      <div id="user-list">
+        <strong>Online Users (<span id="userCount">0</span>/10)</strong>
+        <ul id="userNames"></ul>
+      </div>
+      <div class="chat-box">
+        <div id="messages"></div>
+        <div class="input-group">
+          <input id="msg-input" placeholder="Type a message..." />
+          <button onclick="sendMessage()">Send</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/peerjs@1.5.5/dist/peerjs.min.js"></script>
+  <script src="script.js"></script>
 </body>
 </html>
