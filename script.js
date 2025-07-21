@@ -9,7 +9,7 @@ let myColor = '';
 
 function generateNumericIdWithPrefix() {
   const num = Math.floor(1000 + Math.random() * 9000); // Ensures 4 digits
-  return `CH-${num}`;
+  return `${num}`;
 }
 
 
