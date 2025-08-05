@@ -1,6 +1,5 @@
 # 💬 ChitLAN – Talk freely on your local network
 
-
 **ChitLAN** is a lightweight, peer-to-peer group chat application designed for local area networks (LAN). No server, no internet — just simple and secure real-time messaging with your friends on the same network.
 
 ![PHP](https://img.shields.io/badge/PHP-8.1+-blue)
