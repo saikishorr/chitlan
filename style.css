@@ -243,3 +243,27 @@ body.dark select {
 select option {
   padding: 10px;
 }
+
+
+/* Styling for the file input and send file button */
+.input-group input[type="file"] {
+  flex: 2;
+  padding: 10px;
+  font-size: 1em;
+  border-radius: 5px;
+  border: 1px solid var(--border-color-light);
+}
+
+.input-group button {
+  padding: 10px 20px;
+  font-size: 1em;
+  border-radius: 5px;
+  background-color: #28a745;
+  color: white;
+  border: none;
+  cursor: pointer;
+}
+
+.input-group button:hover {
+  background-color: #218838;
+}
