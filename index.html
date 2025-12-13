@@ -7,7 +7,11 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <button class="theme-toggle" onclick="toggleTheme()">Black/White</button>
+  <!-- Top-right bar: theme + IP address -->
+  <div class="top-right-bar">
+    <button class="theme-toggle" onclick="toggleTheme()">Black/White</button>
+    <span id="ip-display" class="ip-display">IP: --</span>
+  </div>
 
   <audio id="notificationSound" src="https://assets.mixkit.co/sfx/preview/mixkit-clear-announce-tones-2861.mp3" preload="auto"></audio>
 
