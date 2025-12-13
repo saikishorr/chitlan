@@ -1,4 +1,5 @@
-// Updated script.js for file-sharing, 10-user limit, user list, message alignment, sound alert, and dark mode toggle
+// Updated script.js for file-sharing with inline preview, progress bars,
+// 10-user limit, user list, message alignment, sound alert, and dark mode toggle.
 
 let peer;
 let conn;
@@ -7,16 +8,28 @@ let isHost = false;
 let myNickname = '';
 let myColor = '';
 
+// File transfer state
+const CHUNK_SIZE = 64 * 1024; // 64KB per chunk
+const MAX_FILE_SIZE = 1024 * 1024 * 1024; // 999MB limit (adjust if you want)
+
+const incomingFiles = {}; // fileId -> {chunks, totalChunks, received, name, mimeType, size, senderName, senderColor}
+const outgoingFiles = {}; // fileId -> {name, size, totalChunks, sentChunks}
+
 // Generates a random 4-digit numeric ID
 function generateNumericIdWithPrefix() {
   const num = Math.floor(1000 + Math.random() * 9000); // Ensures 4 digits
   return `${num}`;
 }
 
+// Generate unique file ID for each transfer
+function generateFileId() {
+  return 'file-' + Date.now() + '-' + Math.floor(Math.random() * 100000);
+}
+
 function init() {
   myNickname = document.getElementById('nickname').value.trim();
   myColor = document.getElementById('color').value;
-  if (!myNickname) return alert("Please enter your nickname.");
+  if (!myNickname) return alert('Please enter your nickname.');
 
   isHost = document.querySelector('input[name="role"]:checked').value === 'host';
   peer = new Peer(generateNumericIdWithPrefix());
@@ -42,9 +55,17 @@ function init() {
           updateUserList();
           broadcast('System', `${c.nickname} has joined the chat`, '#666');
         } else if (data.type === 'message') {
+          // normal text message from a joiner
           broadcast(data.nickname, data.message, data.color, c);
-        } else if (data.type === 'file') {
-          handleFileReceive(data);
+        } else if (data.type === 'file-chunk') {
+          // file chunk from a joiner
+          handleIncomingFileChunk(data);
+          // forward to all other clients except the sender
+          connections.forEach(p => {
+            if (p.peer !== c.peer) {
+              p.send(data);
+            }
+          });
         }
       });
 
@@ -68,7 +89,7 @@ function connectToHost() {
   conn.on('open', () => {
     conn.send({ type: 'intro', nickname: myNickname, color: myColor });
 
-    // 🟢 Show own name in the user list
+    // Show own name in the user list
     const list = document.getElementById('userNames');
     list.innerHTML = '';
     const li = document.createElement('li');
@@ -81,8 +102,8 @@ function connectToHost() {
         appendMessage(data.nickname, data.message, data.color);
       } else if (data.type === 'system') {
         appendSystemMessage(data.message);
-      } else if (data.type === 'file') {
-        handleFileReceive(data);
+      } else if (data.type === 'file-chunk') {
+        handleIncomingFileChunk(data);
       }
     });
 
@@ -92,7 +113,8 @@ function connectToHost() {
   });
 }
 
-// Function to send a message
+// ===== Chat message helpers =====
+
 function sendMessage() {
   const input = document.getElementById('msg-input');
   const msg = input.value.trim();
@@ -104,14 +126,13 @@ function sendMessage() {
 
   if (isHost) {
     broadcast(myNickname, msg, myColor);
-  } else {
+  } else if (conn) {
     conn.send(data);
   }
 
   input.value = '';
 }
 
-// Function to broadcast message to all connected users
 function broadcast(nickname, message, color = '#000', exclude = null) {
   const payload = { type: 'message', nickname, color, message };
   connections.forEach(c => {
@@ -121,28 +142,32 @@ function broadcast(nickname, message, color = '#000', exclude = null) {
   appendMessage(nickname, message, color);
 }
 
-// Function to append message to the chat box
 function appendMessage(sender, msg, color = '#000', isSender = false) {
+  const messagesDiv = document.getElementById('messages');
   const div = document.createElement('div');
   div.className = 'message ' + (isSender || sender === myNickname ? 'right' : 'left');
-  div.innerHTML = `<strong style="color:${color}">${sender}</strong>${msg}`;
-  document.getElementById('messages').appendChild(div);
-  document.getElementById('messages').scrollTop = document.getElementById('messages').scrollHeight;
 
-  // Play sound only for incoming messages
+  // Escape text to avoid HTML injection
+  const safeMsg = msg.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+  div.innerHTML = `<strong style="color:${color}">${sender}</strong>${safeMsg}`;
+  messagesDiv.appendChild(div);
+  messagesDiv.scrollTop = messagesDiv.scrollHeight;
+
+  // Play sound only for incoming non-system messages
   if (!isSender && sender !== 'System') {
-    const sound = document.getElementById("notificationSound");
+    const sound = document.getElementById('notificationSound');
     sound.currentTime = 0;
     sound.play().catch(() => {});
   }
 }
 
-// Function to append system message
 function appendSystemMessage(msg) {
   appendMessage('System', msg, '#666');
 }
 
-// Function to update the user list
+// ===== User list =====
+
 function updateUserList() {
   const list = document.getElementById('userNames');
   list.innerHTML = '';
@@ -156,35 +181,266 @@ function updateUserList() {
   document.getElementById('userCount').textContent = users.length;
 }
 
-// Function to handle receiving files
-function handleFileReceive(data) {
-  const blob = new Blob([data.buffer]);
-  const url = URL.createObjectURL(blob);
-  appendMessage('System', `📁 File received: <a href="${url}" download="${data.name}">${data.name}</a>`);
+// ===== File sending & receiving with progress =====
+
+function formatFileSize(bytes) {
+  if (bytes === 0) return '0 B';
+  const sizes = ['B', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(1024));
+  const value = bytes / Math.pow(1024, i);
+  return value.toFixed(1) + ' ' + sizes[i];
 }
 
-// Function to send files
+/**
+ * Create a message bubble for a file transfer (sending or receiving).
+ * direction: "outgoing" | "incoming"
+ */
+function appendFileTransferMessage(direction, fileId, name, size, initialProgress, isSender, senderName, senderColor) {
+  const messagesDiv = document.getElementById('messages');
+  const div = document.createElement('div');
+  const alignRight = isSender;
+
+  div.className = 'message file-message ' + (alignRight ? 'right' : 'left');
+  div.dataset.fileId = fileId;
+
+  const displayName = senderName || myNickname;
+  const displayColor = senderColor || myColor;
+
+  const fileSizeText = formatFileSize(size);
+
+  div.innerHTML = `
+    <strong style="color:${displayColor}">${displayName} (File)</strong>
+    <div class="file-meta">
+      <span class="file-name">${name}</span>
+      <span class="file-size">(${fileSizeText})</span>
+      <span class="file-status">${direction === 'outgoing' ? 'Preparing to send…' : 'Receiving…'}</span>
+    </div>
+    <div class="file-progress">
+      <div class="file-progress-bar" style="width:${initialProgress || 0}%"></div>
+    </div>
+    <div class="file-preview"></div>
+  `;
+
+  messagesDiv.appendChild(div);
+  messagesDiv.scrollTop = messagesDiv.scrollHeight;
+  return div;
+}
+
+function updateFileProgress(fileId, progress, isSender) {
+  const msg = document.querySelector(`.file-message[data-file-id="${fileId}"]`);
+  if (!msg) return;
+  const bar = msg.querySelector('.file-progress-bar');
+  const status = msg.querySelector('.file-status');
+
+  if (bar) {
+    bar.style.width = `${progress}%`;
+  }
+  if (status) {
+    const base = isSender ? 'Sending' : 'Receiving';
+    status.textContent = `${base}… ${progress.toFixed(0)}%`;
+  }
+}
+
+function markFileComplete(fileId, isSender) {
+  const msg = document.querySelector(`.file-message[data-file-id="${fileId}"]`);
+  if (!msg) return;
+  const status = msg.querySelector('.file-status');
+  const bar = msg.querySelector('.file-progress');
+
+  if (status) {
+    status.textContent = isSender ? 'Sent ✔️' : 'Received ✔️';
+  }
+  if (bar) {
+    bar.style.opacity = 0.4;
+  }
+
+  // Play sound on completed incoming file
+  if (!isSender) {
+    const sound = document.getElementById('notificationSound');
+    sound.currentTime = 0;
+    sound.play().catch(() => {});
+  }
+}
+
+/**
+ * Send a file in chunks with progress.
+ */
 function sendFile() {
   const fileInput = document.getElementById('fileInput');
   const file = fileInput.files[0];
   if (!file) return;
 
+  if (file.size > MAX_FILE_SIZE) {
+    alert('File too large. Max allowed is ' + formatFileSize(MAX_FILE_SIZE));
+    return;
+  }
+
+  if (!isHost && !conn) {
+    alert('You are not connected to a host.');
+    return;
+  }
+
+  const fileId = generateFileId();
+  const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
+  outgoingFiles[fileId] = {
+    name: file.name,
+    size: file.size,
+    totalChunks,
+    sentChunks: 0
+  };
+
+  // Create outgoing file message bubble
+  appendFileTransferMessage(
+    'outgoing',
+    fileId,
+    file.name,
+    file.size,
+    0,
+    true,
+    myNickname,
+    myColor
+  );
+
+  let currentChunk = 0;
   const reader = new FileReader();
-  reader.onload = () => {
-    const fileData = { type: 'file', name: file.name, buffer: reader.result };
+
+  reader.onload = e => {
+    const chunkBuffer = e.target.result;
+
+    const payload = {
+      type: 'file-chunk',
+      fileId,
+      name: file.name,
+      mimeType: file.type,
+      size: file.size,
+      totalChunks,
+      index: currentChunk,
+      buffer: chunkBuffer,
+      senderNickname: myNickname,
+      senderColor: myColor
+    };
 
     if (isHost) {
-      broadcast(myNickname, 'Sent a file: ' + file.name);
-      connections.forEach(c => c.send(fileData));
+      // host sends directly to all connected peers
+      connections.forEach(c => c.send(payload));
+    } else if (conn) {
+      conn.send(payload);
+    }
+
+    currentChunk++;
+    outgoingFiles[fileId].sentChunks = currentChunk;
+
+    const progress = (currentChunk / totalChunks) * 100;
+    updateFileProgress(fileId, progress, true);
+
+    if (currentChunk < totalChunks) {
+      readNextChunk();
     } else {
-      conn.send(fileData);
-      appendMessage(myNickname, 'Sent a file: ' + file.name, myColor, true);
+      markFileComplete(fileId, true);
+      fileInput.value = ''; // reset input
     }
   };
-  reader.readAsArrayBuffer(file);
+
+  reader.onerror = () => {
+    alert('Error reading file.');
+  };
+
+  function readNextChunk() {
+    const start = currentChunk * CHUNK_SIZE;
+    const end = Math.min(file.size, start + CHUNK_SIZE);
+    const blob = file.slice(start, end);
+    reader.readAsArrayBuffer(blob);
+  }
+
+  readNextChunk();
 }
 
-// Dark mode toggle function
+/**
+ * Handle incoming file chunks (for both host and joiners).
+ */
+function handleIncomingFileChunk(data) {
+  const {
+    fileId,
+    name,
+    mimeType,
+    size,
+    totalChunks,
+    index,
+    buffer,
+    senderNickname,
+    senderColor
+  } = data;
+
+  if (!incomingFiles[fileId]) {
+    // First chunk for this file
+    incomingFiles[fileId] = {
+      chunks: new Array(totalChunks),
+      received: 0,
+      name,
+      mimeType,
+      size,
+      totalChunks,
+      senderName: senderNickname,
+      senderColor
+    };
+
+    // Create incoming message bubble
+    appendFileTransferMessage(
+      'incoming',
+      fileId,
+      name,
+      size,
+      0,
+      senderNickname === myNickname, // isSender (should usually be false here)
+      senderNickname,
+      senderColor
+    );
+  }
+
+  const fileEntry = incomingFiles[fileId];
+  fileEntry.chunks[index] = buffer;
+  fileEntry.received++;
+
+  const progress = (fileEntry.received / fileEntry.totalChunks) * 100;
+  updateFileProgress(fileId, progress, false);
+
+  // If file completed, assemble and show preview/link
+  if (fileEntry.received === fileEntry.totalChunks) {
+    const blob = new Blob(fileEntry.chunks, {
+      type: fileEntry.mimeType || 'application/octet-stream'
+    });
+    const url = URL.createObjectURL(blob);
+
+    const msg = document.querySelector(`.file-message[data-file-id="${fileId}"]`);
+    if (msg) {
+      const preview = msg.querySelector('.file-preview');
+      preview.innerHTML = '';
+
+      if (fileEntry.mimeType && fileEntry.mimeType.startsWith('image/')) {
+        // Inline image preview
+        const img = document.createElement('img');
+        img.src = url;
+        img.alt = fileEntry.name;
+        img.className = 'image-preview';
+        img.onclick = () => window.open(url, '_blank');
+        preview.appendChild(img);
+      } else {
+        // Download link for non-image file
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = fileEntry.name;
+        link.textContent = '📁 Download ' + fileEntry.name;
+        preview.appendChild(link);
+      }
+    }
+
+    markFileComplete(fileId, false);
+  }
+}
+
+// ===== Dark mode toggle =====
+
 function toggleTheme() {
-  document.body.classList.toggle('dark-theme');
+  // Match the CSS selector: body.dark { ... }
+  document.body.classList.toggle('dark');
 }
