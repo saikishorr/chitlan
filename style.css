@@ -1,4 +1,5 @@
-/* Updated style.css for improved layout, message alignment, and dark mode toggle */
+/* Updated style.css for improved layout, message alignment, file previews,
+   progress bars, IP display, and dark mode toggle */
 
 :root {
   --bg-light: #f9f9f9;
@@ -41,7 +42,8 @@ h1 {
   margin-right: auto;
 }
 
-input, button {
+input,
+button {
   padding: 10px;
   margin: 5px 0;
   box-sizing: border-box;
@@ -51,11 +53,50 @@ input, button {
   transition: background 0.3s, color 0.3s;
 }
 
-body.dark input, body.dark button {
+body.dark input,
+body.dark button {
   background: var(--input-bg-dark);
   color: var(--text-dark);
   border: 1px solid var(--border-color-dark);
 }
+
+/* ===== Top right bar (theme + IP) ===== */
+
+.top-right-bar {
+  position: fixed;
+  top: 15px;
+  right: 15px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 1000;
+}
+
+.theme-toggle {
+  background: #007bff;
+  color: white;
+  padding: 6px 12px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.theme-toggle:hover {
+  background: #0056b3;
+}
+
+.ip-display {
+  font-size: 0.85em;
+  padding: 4px 8px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.05);
+}
+
+body.dark .ip-display {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* ===== Chat layout ===== */
 
 #chat-ui {
   max-width: 900px;
@@ -159,6 +200,72 @@ body.dark .message.left {
   margin-bottom: 4px;
 }
 
+/* ===== File message & preview styling ===== */
+
+.file-message {
+  max-width: 80%;
+}
+
+.file-meta {
+  font-size: 0.85em;
+  margin-top: 2px;
+  opacity: 0.9;
+}
+
+.file-meta .file-name {
+  font-weight: 600;
+}
+
+.file-meta .file-size {
+  margin-left: 6px;
+}
+
+.file-meta .file-status {
+  display: block;
+  margin-top: 2px;
+}
+
+.file-progress {
+  margin-top: 6px;
+  height: 6px;
+  border-radius: 4px;
+  background: #e9ecef;
+  overflow: hidden;
+}
+
+body.dark .file-progress {
+  background: #333;
+}
+
+.file-progress-bar {
+  height: 100%;
+  width: 0%;
+  background: #28a745;
+  transition: width 0.2s linear;
+}
+
+.file-preview {
+  margin-top: 8px;
+}
+
+.file-preview a {
+  word-break: break-all;
+  text-decoration: none;
+}
+
+.file-preview a:hover {
+  text-decoration: underline;
+}
+
+.image-preview {
+  max-width: 200px;
+  max-height: 160px;
+  border-radius: 4px;
+  display: block;
+}
+
+/* ===== Input area ===== */
+
 .input-group {
   display: flex;
   gap: 10px;
@@ -186,30 +293,35 @@ body.dark .message.left {
   background-color: #0056b3;
 }
 
-.theme-toggle {
-  position: fixed;
-  top: 15px;
-  right: 15px;
-  background: #007bff;
-  color: white;
-  padding: 6px 12px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  z-index: 1000;
+/* ===== File input row ===== */
+
+.file-group {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+  flex-wrap: wrap;
 }
 
-@media (max-width: 768px) {
-  .chat-container {
-    flex-direction: column;
-  }
+.file-group input[type="file"] {
+  flex: 1;
+  min-width: 0;
+}
 
-  #user-list {
-    width: 100%;
-    margin-bottom: 10px;
-    height: auto;
-  }
-} 
+.file-group button {
+  padding: 10px 20px;
+  font-size: 1em;
+  border-radius: 5px;
+  background-color: #28a745;
+  color: white;
+  border: none;
+  cursor: pointer;
+}
+
+.file-group button:hover {
+  background-color: #218838;
+}
+
+/* ===== Forms / labels ===== */
 
 label {
   display: block;
@@ -244,58 +356,20 @@ select option {
   padding: 10px;
 }
 
+/* ===== Responsive ===== */
 
-/* Styling for the file input and send file button */
-.input-group input[type="file"] {
-  flex: 2;
-  padding: 10px;
-  font-size: 1em;
-  border-radius: 5px;
-  border: 1px solid var(--border-color-light);
+@media (max-width: 768px) {
+  .chat-container {
+    flex-direction: column;
+  }
+
+  #user-list {
+    width: 100%;
+    margin-bottom: 10px;
+    height: auto;
+  }
 }
 
-.input-group button {
-  padding: 10px 20px;
-  font-size: 1em;
-  border-radius: 5px;
-  background-color: #28a745;
-  color: white;
-  border: none;
-  cursor: pointer;
-}
-
-.input-group button:hover {
-  background-color: #218838;
-}
-
-
-.file-group {
-  display: flex;
-  gap: 10px;
-  margin-top: 10px;
-  flex-wrap: wrap;
-}
-
-.file-group input[type="file"] {
-  flex: 1;
-  min-width: 0;
-}
-
-.file-group button {
-  padding: 10px 20px;
-  font-size: 1em;
-  border-radius: 5px;
-  background-color: #28a745;
-  color: white;
-  border: none;
-  cursor: pointer;
-}
-
-.file-group button:hover {
-  background-color: #218838;
-}
-
-/* Adjust layout for smaller screens */
 @media (max-width: 600px) {
   .file-group {
     flex-direction: column;
