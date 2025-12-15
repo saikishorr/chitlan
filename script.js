@@ -1,448 +1,169 @@
-// Updated script.js for file-sharing with inline preview, progress bars,
-// 10-user limit, user list, message alignment, sound alert, and dark mode toggle.
+// ================= CONFIG =================
+const CHUNK_SIZE = 3 * 1024 * 1024; // 2MB
+const MAX_FILE_SIZE = 100 * 1024 * 1024 * 1024; // 100GB
+const RECONNECT_INTERVAL = 3000;
+const RESEND_TIMEOUT = 4000;
 
-let peer;
-let conn;
-let connections = []; // for host
+// ================= STATE =================
+let peer, conn;
+let connections = [];
 let isHost = false;
-let myNickname = '';
-let myColor = '';
+let myNickname = '', myColor = '';
 
-// File transfer state
-const CHUNK_SIZE = 64 * 1024; // 64KB per chunk
-const MAX_FILE_SIZE = 102400 * 10240 * 10240; // 10GB limit (adjust if you want)
+const outgoingFiles = {};
+const incomingFiles = {};
 
-const incomingFiles = {}; // fileId -> {chunks, totalChunks, received, name, mimeType, size, senderName, senderColor}
-const outgoingFiles = {}; // fileId -> {name, size, totalChunks, sentChunks}
+// ================= UTIL =================
+const genId = () => Math.floor(1000 + Math.random() * 9000).toString();
+const genFileId = () => `file-${Date.now()}-${Math.random()}`;
 
-// Generates a random 4-digit numeric ID
-function generateNumericIdWithPrefix() {
-  const num = Math.floor(1000 + Math.random() * 9000); // Ensures 4 digits
-  return `${num}`;
+function formatSpeed(bps) {
+  if (bps > 1024 ** 3) return (bps / 1024 ** 3).toFixed(2) + ' GB/s';
+  if (bps > 1024 ** 2) return (bps / 1024 ** 2).toFixed(2) + ' MB/s';
+  return (bps / 1024).toFixed(2) + ' KB/s';
 }
 
-// Generate unique file ID for each transfer
-function generateFileId() {
-  return 'file-' + Date.now() + '-' + Math.floor(Math.random() * 100000);
-}
-
+// ================= INIT =================
 function init() {
-  myNickname = document.getElementById('nickname').value.trim();
-  myColor = document.getElementById('color').value;
-  if (!myNickname) return alert('Please enter your nickname.');
+  myNickname = nickname.value.trim();
+  myColor = color.value;
+  if (!myNickname) return alert('Enter nickname');
 
-  isHost = document.querySelector('input[name="role"]:checked').value === 'host';
-  peer = new Peer(generateNumericIdWithPrefix());
+  isHost = document.querySelector('[name=role]:checked').value === 'host';
+  peer = new Peer(genId());
 
-  peer.on('open', id => {
-    document.getElementById('peer-id').value = id;
-    appendSystemMessage(`Your ID is ${id}`);
-  });
+  peer.on('open', id => peerId.value = id);
+  peer.on('disconnected', () => setTimeout(() => peer.reconnect(), RECONNECT_INTERVAL));
 
-  if (isHost) {
-    peer.on('connection', c => {
-      if (connections.length >= 10) {
-        c.send({ type: 'system', message: 'Room is full. Max 10 users allowed.' });
-        c.close();
-        return;
-      }
-
-      c.on('data', data => {
-        if (data.type === 'intro') {
-          c.nickname = data.nickname;
-          c.color = data.color;
-          connections.push(c);
-          updateUserList();
-          broadcast('System', `${c.nickname} has joined the chat`, '#666');
-        } else if (data.type === 'message') {
-          // normal text message from a joiner
-          broadcast(data.nickname, data.message, data.color, c);
-        } else if (data.type === 'file-chunk') {
-          // file chunk from a joiner
-          handleIncomingFileChunk(data);
-          // forward to all other clients except the sender
-          connections.forEach(p => {
-            if (p.peer !== c.peer) {
-              p.send(data);
-            }
-          });
-        }
-      });
-
-      c.on('close', () => {
-        broadcast('System', `${c.nickname || 'A user'} left the chat`, '#666');
-        connections = connections.filter(p => p.peer !== c.peer);
-        updateUserList();
-      });
-    });
-  }
-
-  document.getElementById('chat-ui').style.display = 'block';
+  if (isHost) setupHost();
+  chatUI.style.display = 'block';
 }
 
+// ================= CONNECTION =================
 function connectToHost() {
-  const hostId = document.getElementById('connect-id').value.trim();
-  if (!hostId) return alert("Please enter host's Peer ID.");
+  const hostId = connectId.value.trim();
+  if (!hostId) return;
 
   conn = peer.connect(hostId);
 
-  conn.on('open', () => {
-    conn.send({ type: 'intro', nickname: myNickname, color: myColor });
-
-    // Show own name in the user list
-    const list = document.getElementById('userNames');
-    list.innerHTML = '';
-    const li = document.createElement('li');
-    li.innerHTML = `<span class="dot"></span> ${myNickname}`;
-    list.appendChild(li);
-    document.getElementById('userCount').textContent = 1;
-
-    conn.on('data', data => {
-      if (data.type === 'message') {
-        appendMessage(data.nickname, data.message, data.color);
-      } else if (data.type === 'system') {
-        appendSystemMessage(data.message);
-      } else if (data.type === 'file-chunk') {
-        handleIncomingFileChunk(data);
-      }
-    });
-
-    conn.on('close', () => {
-      appendSystemMessage('Disconnected from chat');
-    });
-  });
+  conn.on('open', () => conn.send({ type: 'intro', nickname: myNickname, color: myColor }));
+  conn.on('close', () => setTimeout(connectToHost, RECONNECT_INTERVAL));
+  conn.on('data', handleData);
 }
 
-// ===== Chat message helpers =====
-
-function sendMessage() {
-  const input = document.getElementById('msg-input');
-  const msg = input.value.trim();
-  if (!msg) return;
-
-  appendMessage(myNickname, msg, myColor, true);
-
-  const data = { type: 'message', nickname: myNickname, color: myColor, message: msg };
-
-  if (isHost) {
-    broadcast(myNickname, msg, myColor);
-  } else if (conn) {
-    conn.send(data);
-  }
-
-  input.value = '';
+// ================= DATA ROUTER =================
+function handleData(data) {
+  if (data.type === 'file-chunk') receiveChunk(data);
+  if (data.type === 'ack') handleAck(data);
+  if (data.type === 'resend-request') resendChunks(data);
 }
 
-function broadcast(nickname, message, color = '#000', exclude = null) {
-  const payload = { type: 'message', nickname, color, message };
-  connections.forEach(c => {
-    if (exclude && c.peer === exclude.peer) return;
-    c.send(payload);
-  });
-  appendMessage(nickname, message, color);
-}
-
-function appendMessage(sender, msg, color = '#000', isSender = false) {
-  const messagesDiv = document.getElementById('messages');
-  const div = document.createElement('div');
-  div.className = 'message ' + (isSender || sender === myNickname ? 'right' : 'left');
-
-  // Escape text to avoid HTML injection
-  const safeMsg = msg.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-
-  div.innerHTML = `<strong style="color:${color}">${sender}</strong>${safeMsg}`;
-  messagesDiv.appendChild(div);
-  messagesDiv.scrollTop = messagesDiv.scrollHeight;
-
-  // Play sound only for incoming non-system messages
-  if (!isSender && sender !== 'System') {
-    const sound = document.getElementById('notificationSound');
-    sound.currentTime = 0;
-    sound.play().catch(() => {});
-  }
-}
-
-function appendSystemMessage(msg) {
-  appendMessage('System', msg, '#666');
-}
-
-// ===== User list =====
-
-function updateUserList() {
-  const list = document.getElementById('userNames');
-  list.innerHTML = '';
-  const users = connections.map(c => c.nickname);
-  users.unshift(myNickname + ' (Host)');
-  users.forEach(name => {
-    const li = document.createElement('li');
-    li.innerHTML = `<span class="dot"></span> ${name}`;
-    list.appendChild(li);
-  });
-  document.getElementById('userCount').textContent = users.length;
-}
-
-// ===== File sending & receiving with progress =====
-
-function formatFileSize(bytes) {
-  if (bytes === 0) return '0 B';
-  const sizes = ['B', 'KB', 'MB', 'GB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(1024));
-  const value = bytes / Math.pow(1024, i);
-  return value.toFixed(1) + ' ' + sizes[i];
-}
-
-/**
- * Create a message bubble for a file transfer (sending or receiving).
- * direction: "outgoing" | "incoming"
- */
-function appendFileTransferMessage(direction, fileId, name, size, initialProgress, isSender, senderName, senderColor) {
-  const messagesDiv = document.getElementById('messages');
-  const div = document.createElement('div');
-  const alignRight = isSender;
-
-  div.className = 'message file-message ' + (alignRight ? 'right' : 'left');
-  div.dataset.fileId = fileId;
-
-  const displayName = senderName || myNickname;
-  const displayColor = senderColor || myColor;
-
-  const fileSizeText = formatFileSize(size);
-
-  div.innerHTML = `
-    <strong style="color:${displayColor}">${displayName} (File)</strong>
-    <div class="file-meta">
-      <span class="file-name">${name}</span>
-      <span class="file-size">(${fileSizeText})</span>
-      <span class="file-status">${direction === 'outgoing' ? 'Preparing to send…' : 'Receiving…'}</span>
-    </div>
-    <div class="file-progress">
-      <div class="file-progress-bar" style="width:${initialProgress || 0}%"></div>
-    </div>
-    <div class="file-preview"></div>
-  `;
-
-  messagesDiv.appendChild(div);
-  messagesDiv.scrollTop = messagesDiv.scrollHeight;
-  return div;
-}
-
-function updateFileProgress(fileId, progress, isSender) {
-  const msg = document.querySelector(`.file-message[data-file-id="${fileId}"]`);
-  if (!msg) return;
-  const bar = msg.querySelector('.file-progress-bar');
-  const status = msg.querySelector('.file-status');
-
-  if (bar) {
-    bar.style.width = `${progress}%`;
-  }
-  if (status) {
-    const base = isSender ? 'Sending' : 'Receiving';
-    status.textContent = `${base}… ${progress.toFixed(0)}%`;
-  }
-}
-
-function markFileComplete(fileId, isSender) {
-  const msg = document.querySelector(`.file-message[data-file-id="${fileId}"]`);
-  if (!msg) return;
-  const status = msg.querySelector('.file-status');
-  const bar = msg.querySelector('.file-progress');
-
-  if (status) {
-    status.textContent = isSender ? 'Sent ✔️' : 'Received ✔️';
-  }
-  if (bar) {
-    bar.style.opacity = 0.4;
-  }
-
-  // Play sound on completed incoming file
-  if (!isSender) {
-    const sound = document.getElementById('notificationSound');
-    sound.currentTime = 0;
-    sound.play().catch(() => {});
-  }
-}
-
-/**
- * Send a file in chunks with progress.
- */
+// ================= FILE SEND =================
 function sendFile() {
-  const fileInput = document.getElementById('fileInput');
   const file = fileInput.files[0];
-  if (!file) return;
+  if (!file || file.size > MAX_FILE_SIZE) return alert('Invalid file');
 
-  if (file.size > MAX_FILE_SIZE) {
-    alert('File too large. Max allowed is ' + formatFileSize(MAX_FILE_SIZE));
-    return;
-  }
-
-  if (!isHost && !conn) {
-    alert('You are not connected to a host.');
-    return;
-  }
-
-  const fileId = generateFileId();
+  const fileId = genFileId();
   const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
+
   outgoingFiles[fileId] = {
-    name: file.name,
-    size: file.size,
+    file,
     totalChunks,
-    sentChunks: 0
+    sent: new Set(),
+    acked: new Set(),
+    startTime: Date.now()
   };
 
-  // Create outgoing file message bubble
-  appendFileTransferMessage(
-    'outgoing',
-    fileId,
-    file.name,
-    file.size,
-    0,
-    true,
-    myNickname,
-    myColor
-  );
+  sendChunk(fileId, 0);
+}
 
-  let currentChunk = 0;
+function sendChunk(fileId, index) {
+  const f = outgoingFiles[fileId];
+  if (!f || index >= f.totalChunks) return;
+
+  const start = index * CHUNK_SIZE;
+  const slice = f.file.slice(start, start + CHUNK_SIZE);
   const reader = new FileReader();
 
-  reader.onload = e => {
-    const chunkBuffer = e.target.result;
-
+  reader.onload = () => {
     const payload = {
       type: 'file-chunk',
       fileId,
-      name: file.name,
-      mimeType: file.type,
-      size: file.size,
-      totalChunks,
-      index: currentChunk,
-      buffer: chunkBuffer,
-      senderNickname: myNickname,
-      senderColor: myColor
+      index,
+      totalChunks: f.totalChunks,
+      size: f.file.size,
+      name: f.file.name,
+      buffer: reader.result
     };
 
-    if (isHost) {
-      // host sends directly to all connected peers
-      connections.forEach(c => c.send(payload));
-    } else if (conn) {
-      conn.send(payload);
-    }
+    (isHost ? connections : [conn]).forEach(c => c.send(payload));
+    f.sent.add(index);
 
-    currentChunk++;
-    outgoingFiles[fileId].sentChunks = currentChunk;
+    setTimeout(() => {
+      if (!f.acked.has(index)) sendChunk(fileId, index);
+    }, RESEND_TIMEOUT);
 
-    const progress = (currentChunk / totalChunks) * 100;
-    updateFileProgress(fileId, progress, true);
-
-    if (currentChunk < totalChunks) {
-      readNextChunk();
-    } else {
-      markFileComplete(fileId, true);
-      fileInput.value = ''; // reset input
-    }
+    if (index + 1 < f.totalChunks) sendChunk(fileId, index + 1);
   };
 
-  reader.onerror = () => {
-    alert('Error reading file.');
-  };
-
-  function readNextChunk() {
-    const start = currentChunk * CHUNK_SIZE;
-    const end = Math.min(file.size, start + CHUNK_SIZE);
-    const blob = file.slice(start, end);
-    reader.readAsArrayBuffer(blob);
-  }
-
-  readNextChunk();
+  reader.readAsArrayBuffer(slice);
 }
 
-/**
- * Handle incoming file chunks (for both host and joiners).
- */
-function handleIncomingFileChunk(data) {
-  const {
-    fileId,
-    name,
-    mimeType,
-    size,
-    totalChunks,
-    index,
-    buffer,
-    senderNickname,
-    senderColor
-  } = data;
+function handleAck({ fileId, index }) {
+  const f = outgoingFiles[fileId];
+  if (!f) return;
 
-  if (!incomingFiles[fileId]) {
-    // First chunk for this file
-    incomingFiles[fileId] = {
-      chunks: new Array(totalChunks),
-      received: 0,
-      name,
-      mimeType,
-      size,
-      totalChunks,
-      senderName: senderNickname,
-      senderColor
+  f.acked.add(index);
+  const sentBytes = f.acked.size * CHUNK_SIZE;
+  const speed = formatSpeed(sentBytes / ((Date.now() - f.startTime) / 1000));
+
+  updateFileProgress(fileId, (f.acked.size / f.totalChunks) * 100, true, speed);
+
+  if (f.acked.size === f.totalChunks) markFileComplete(fileId, true);
+}
+
+// ================= FILE RECEIVE =================
+async function receiveChunk(data) {
+  let f = incomingFiles[data.fileId];
+
+  if (!f) {
+    const handle = await showSaveFilePicker({ suggestedName: data.name });
+    f = incomingFiles[data.fileId] = {
+      writable: await handle.createWritable(),
+      received: new Set(),
+      buffer: new Map(),
+      expected: 0,
+      total: data.totalChunks,
+      startTime: Date.now(),
+      size: data.size
     };
-
-    // Create incoming message bubble
-    appendFileTransferMessage(
-      'incoming',
-      fileId,
-      name,
-      size,
-      0,
-      senderNickname === myNickname, // isSender (should usually be false here)
-      senderNickname,
-      senderColor
-    );
   }
 
-  const fileEntry = incomingFiles[fileId];
-  fileEntry.chunks[index] = buffer;
-  fileEntry.received++;
+  f.received.add(data.index);
+  f.buffer.set(data.index, data.buffer);
 
-  const progress = (fileEntry.received / fileEntry.totalChunks) * 100;
-  updateFileProgress(fileId, progress, false);
+  while (f.buffer.has(f.expected)) {
+    await f.writable.write(f.buffer.get(f.expected));
+    f.buffer.delete(f.expected);
+    f.expected++;
+  }
 
-  // If file completed, assemble and show preview/link
-  if (fileEntry.received === fileEntry.totalChunks) {
-    const blob = new Blob(fileEntry.chunks, {
-      type: fileEntry.mimeType || 'application/octet-stream'
-    });
-    const url = URL.createObjectURL(blob);
+  conn.send({ type: 'ack', fileId: data.fileId, index: data.index });
 
-    const msg = document.querySelector(`.file-message[data-file-id="${fileId}"]`);
-    if (msg) {
-      const preview = msg.querySelector('.file-preview');
-      preview.innerHTML = '';
+  const speed = formatSpeed(
+    (f.expected * CHUNK_SIZE) / ((Date.now() - f.startTime) / 1000)
+  );
 
-      if (fileEntry.mimeType && fileEntry.mimeType.startsWith('image/')) {
-        // Inline image preview
-        const img = document.createElement('img');
-        img.src = url;
-        img.alt = fileEntry.name;
-        img.className = 'image-preview';
-        img.onclick = () => window.open(url, '_blank');
-        preview.appendChild(img);
-      } else {
-        // Download link for non-image file
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = fileEntry.name;
-        link.textContent = '📁 Download ' + fileEntry.name;
-        preview.appendChild(link);
-      }
-    }
+  updateFileProgress(data.fileId, (f.expected / f.total) * 100, false, speed);
 
-    markFileComplete(fileId, false);
+  if (f.expected === f.total) {
+    await f.writable.close();
+    markFileComplete(data.fileId, false);
+    delete incomingFiles[data.fileId];
   }
 }
 
-// ===== Dark mode toggle =====
-
-function toggleTheme() {
-  // Match the CSS selector: body.dark { ... }
-  document.body.classList.toggle('dark');
+// ================= RESEND =================
+function resendChunks({ fileId, missing }) {
+  missing.forEach(i => sendChunk(fileId, i));
 }
-
-
