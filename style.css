@@ -381,3 +381,15 @@ select option {
     width: 100%;
   }
 }
+
+.file-speed {
+  display: block;
+  font-size: 11px;
+  color: #888;
+  margin-top: 2px;
+}
+
+body.dark .file-speed {
+  color: #aaa;
+}
+
