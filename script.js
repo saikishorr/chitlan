@@ -10,7 +10,7 @@ let myColor = '';
 
 // File transfer state
 const CHUNK_SIZE = 64 * 1024; // 64KB per chunk
-const MAX_FILE_SIZE = 10240 * 1024 * 1024; // 10GB limit (adjust if you want)
+const MAX_FILE_SIZE = 102400 * 10240 * 10240; // 10GB limit (adjust if you want)
 
 const incomingFiles = {}; // fileId -> {chunks, totalChunks, received, name, mimeType, size, senderName, senderColor}
 const outgoingFiles = {}; // fileId -> {name, size, totalChunks, sentChunks}
@@ -444,4 +444,5 @@ function toggleTheme() {
   // Match the CSS selector: body.dark { ... }
   document.body.classList.toggle('dark');
 }
+
 
