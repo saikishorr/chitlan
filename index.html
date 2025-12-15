@@ -7,18 +7,26 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+
   <!-- Top-right bar: theme + IP address -->
   <div class="top-right-bar">
     <button class="theme-toggle" onclick="toggleTheme()">Black/White</button>
     <span id="ip-display" class="ip-display">IP: --</span>
   </div>
 
-  <audio id="notificationSound" src="https://assets.mixkit.co/sfx/preview/mixkit-clear-announce-tones-2861.mp3" preload="auto"></audio>
+  <!-- Notification sound -->
+  <audio
+    id="notificationSound"
+    src="https://assets.mixkit.co/sfx/preview/mixkit-clear-announce-tones-2861.mp3"
+    preload="auto">
+  </audio>
 
   <h1>ChitLAN – Talk freely on your local network</h1>
 
+  <!-- User setup -->
   <div class="form-group">
     <input id="nickname" placeholder="Enter your nickname" />
+
     <label for="color">Choose Color:</label>
     <select id="color">
       <option value="#007bff" style="color: #007bff">Blue</option>
@@ -34,40 +42,61 @@
     </select>
 
     <div class="radio">
-      <label><input type="radio" name="role" value="host" checked> Host Room</label>
-      <label><input type="radio" name="role" value="joiner"> Join Room</label>
+      <label>
+        <input type="radio" name="role" value="host" checked>
+        Host Room
+      </label>
+      <label>
+        <input type="radio" name="role" value="joiner">
+        Join Room
+      </label>
     </div>
+
     <button onclick="init()">Start</button>
   </div>
 
+  <!-- Connection info -->
   <div class="form-group">
     <input id="peer-id" readonly placeholder="Your Peer ID (Share if host)" />
     <input id="connect-id" placeholder="Host's Peer ID (if joining)" />
     <button onclick="connectToHost()">Connect</button>
   </div>
 
+  <!-- Chat UI -->
   <div id="chat-ui" style="display: none;">
     <div class="chat-container">
+
+      <!-- User list -->
       <div id="user-list">
-        <strong>Online Users (<span id="userCount">0</span>/10)</strong>
+        <strong>
+          Online Users (<span id="userCount">0</span>/10)
+        </strong>
         <ul id="userNames"></ul>
       </div>
+
+      <!-- Chat area -->
       <div class="chat-box">
         <div id="messages"></div>
+
+        <!-- Message input -->
         <div class="input-group">
           <input id="msg-input" placeholder="Type a message..." />
           <button onclick="sendMessage()">Send</button>
         </div>
-        <!-- File input and send button -->
+
+        <!-- File input -->
         <div class="file-group">
           <input type="file" id="fileInput" />
           <button onclick="sendFile()">Send File</button>
         </div>
+
       </div>
     </div>
   </div>
 
+  <!-- Scripts -->
   <script src="https://unpkg.com/peerjs@1.5.5/dist/peerjs.min.js"></script>
   <script src="script.js"></script>
+
 </body>
 </html>
