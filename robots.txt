@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://saikishorr.github.io/chitlan/sitemap.xml
