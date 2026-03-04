@@ -87,9 +87,10 @@ body.dark button {
 
 .ip-display {
   font-size: 0.85em;
-  padding: 4px 8px;
-  border-radius: 4px;
-  background: rgba(0, 0, 0, 0.05);
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: rgba(0,0,0,0.08);
+  font-weight: 500;
 }
 
 body.dark .ip-display {
