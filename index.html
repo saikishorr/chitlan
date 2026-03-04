@@ -65,17 +65,23 @@
       text-align: center;
       margin-top: 40px;
     }
-    .launch a {
-      background: #007bff;
-      color: #fff;
-      padding: 14px 28px;
-      font-size: 1.1em;
-      border-radius: 6px;
-      text-decoration: none;
-    }
-    .launch a:hover {
-      background: #0056b3;
-    }
+.launch a {
+  display: inline-block;
+  background: #007bff;
+  color: #fff;
+  padding: 14px 28px;
+  font-size: 1.1em;
+  border-radius: 6px;
+  text-decoration: none;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.launch a:hover {
+  background: #0056b3;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
     footer {
       margin-top: 40px;
       text-align: center;
