@@ -20,43 +20,19 @@ const incomingFiles = {};
 
 const outgoingFiles = {}; 
 // fileId -> { file, totalChunks, sentSet, ackedSet, startTime }
-function detectLocalIP() {
+async function detectPublicIP() {
   const ipDisplay = document.getElementById("ip-display");
 
-  // First try hostname (works for GitHub Pages or LAN servers)
-  let host = window.location.hostname;
-
-  if (host && host !== "") {
-    ipDisplay.textContent = "Host: " + host;
-    return;
+  try {
+    const res = await fetch("https://api.ipify.org?format=json");
+    const data = await res.json();
+    ipDisplay.textContent = "Public IP: " + data.ip;
+  } catch (e) {
+    ipDisplay.textContent = "IP: Not available";
   }
-
-  // Fallback: try WebRTC method
-  const pc = new RTCPeerConnection({ iceServers: [] });
-  pc.createDataChannel("");
-
-  pc.createOffer().then(offer => pc.setLocalDescription(offer));
-
-  pc.onicecandidate = (event) => {
-    if (!event || !event.candidate) return;
-
-    const candidate = event.candidate.candidate;
-    const match = candidate.match(/(\d{1,3}(\.\d{1,3}){3})/);
-
-    if (match) {
-      ipDisplay.textContent = "IP: " + match[1];
-      pc.onicecandidate = null;
-      pc.close();
-    }
-  };
-
-  // Timeout fallback
-  setTimeout(() => {
-    if (ipDisplay.textContent.includes("Detecting") || ipDisplay.textContent.includes("--")) {
-      ipDisplay.textContent = "IP: Not Available";
-    }
-  }, 3000);
 }
+
+window.addEventListener("load", detectPublicIP);
 
 // Generates a random 4-digit numeric ID
 function generateNumericIdWithPrefix() {
@@ -550,6 +526,7 @@ function formatSpeed(bytesPerSecond) {
   if (bytesPerSecond > 1024 ** 2) return (bytesPerSecond / 1024 ** 2).toFixed(2) + ' MB/s';
   return (bytesPerSecond / 1024).toFixed(2) + ' KB/s';
 }
+
 
 
 window.addEventListener("load", detectLocalIP);
