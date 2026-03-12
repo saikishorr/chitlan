@@ -1,5 +1,7 @@
 # 💬 ChitLAN – Talk Freely on Your Local Network
 
+**Latest Version:** v1.2.1
+
 **ChitLAN** is a lightweight, browser-based **peer-to-peer group chat and file sharing application** designed for local area networks (LAN).  
 No server. No cloud. No accounts. Just fast, private communication within your network.
 
@@ -27,12 +29,12 @@ No server. No cloud. No accounts. Just fast, private communication within your n
 - 🔊 **Notification sounds** for incoming messages
 - 🎨 Choose from **10 predefined high-contrast user colors**
 - 🌗 **Dark mode toggle** for comfortable day/night usage
+- 🌐 Displays user's **local LAN IP address**
 - 📱 Fully **responsive UI** for desktop and mobile devices
 
-### 📁 File Sharing (v1.2.0)
+### 📁 File Sharing (v1.2.1)
 - 📤 **Peer-to-peer file sharing** (no server, no uploads)
 - 📦 Supports **large files (up to 100GB)**
-- 📊 Real-time **file transfer progress bars**
 - 🖼 **Inline image preview** inside the chat
 - 🔗 Clean download links for non-image files
 - 🔁 Chunk-based transfer with retry & acknowledgements
@@ -52,7 +54,15 @@ All users must be connected to the **same local network (LAN)** for peer-to-peer
 
 ## 📦 Getting Started
 
-### 1️⃣ Clone the Repository
+### Clone the Repository
 ```bash
 git clone https://github.com/saikishorr/chitlan.git
 cd chitlan
+```
+
+## 📜 Version History
+
+- **v1.2.1** – Fixed LAN IP address detection
+- **v1.2.0** – File sharing, previews, and performance improvements
+- **v1.1.0** – Multi-user support and UI improvements
+- **v1.0.0** – Initial release
