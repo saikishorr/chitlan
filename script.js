@@ -7,6 +7,9 @@ let connections = []; // for host
 let isHost = false;
 let myNickname = '';
 let myColor = '';
+let localStream = null;
+let activeCalls = {};
+let isMuted = false;
 
 // File transfer state
 const CHUNK_SIZE = 3 * 1024 * 1024; // 3MB (required for large files)
@@ -23,13 +26,24 @@ const outgoingFiles = {};
 async function detectPublicIP() {
   const ipDisplay = document.getElementById("ip-display");
 
-  try {
-    const res = await fetch("https://api.ipify.org?format=json");
-    const data = await res.json();
-    ipDisplay.textContent = "Public IP: " + data.ip;
-  } catch (e) {
+try {
+  const res = await fetch("https://api.ipify.org?format=json", {
+    cache: "no-store"
+  });
+
+  if (!res.ok) throw new Error();
+
+  const data = await res.json();
+  ipDisplay.textContent = "Public IP: " + data.ip;
+
+} catch (e) {
+  // ✅ Better offline handling
+  if (!navigator.onLine) {
+    ipDisplay.textContent = "Offline (no internet)";
+  } else {
     ipDisplay.textContent = "IP: Not available";
   }
+}
 }
 
 window.addEventListener("load", detectPublicIP);
@@ -63,6 +77,16 @@ function init() {
     document.getElementById('peer-id').value = id;
     appendSystemMessage(`Your ID is ${id}`);
   });
+
+  peer.on("call", call => {
+  call.answer(localStream);
+
+  call.on("stream", remoteStream => {
+    playAudio(call.peer, remoteStream);
+  });
+
+  activeCalls[call.peer] = call;
+});
 
   if (isHost) {
     peer.on('connection', c => {
@@ -530,3 +554,129 @@ function formatSpeed(bytesPerSecond) {
 
 
 window.addEventListener("load", detectLocalIP);
+
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker
+      .register("./sw.js")
+      .then(() => console.log("Service Worker registered"))
+      .catch(err => console.log("SW failed:", err));
+  });
+}
+
+
+let deferredPrompt;
+
+window.addEventListener("beforeinstallprompt", e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  document.getElementById("installBtn").style.display = "block";
+});
+
+document.getElementById("installBtn").addEventListener("click", async () => {
+  if (!deferredPrompt) return;
+
+  deferredPrompt.prompt();
+  const result = await deferredPrompt.userChoice;
+
+  if (result.outcome === "accepted") {
+    console.log("User installed");
+  }
+
+  deferredPrompt = null;
+});
+
+
+navigator.serviceWorker.addEventListener("controllerchange", () => {
+  window.location.reload();
+});
+
+
+async function startVoice() {
+  try {
+    localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+    document.getElementById("voice-ui").style.display = "block";
+    updateVoiceUsers();
+
+    if (isHost) {
+      connections.forEach(c => {
+        callPeer(c.peer);
+      });
+    } else if (conn) {
+      callPeer(conn.peer);
+    }
+
+  } catch (err) {
+    alert("Microphone access denied");
+  }
+  if ((connections.length || 1) > 6) {
+  alert("Voice works best with max 6 users");
+}
+}
+
+function callPeer(peerId) {
+  if (!localStream) return;
+
+  const call = peer.call(peerId, localStream);
+
+  call.on("stream", remoteStream => {
+    playAudio(peerId, remoteStream);
+  });
+
+  activeCalls[peerId] = call;
+  if (activeCalls[peerId]) return;
+}
+
+function playAudio(peerId, stream) {
+  let audio = document.getElementById("audio-" + peerId);
+
+  if (!audio) {
+    audio = document.createElement("audio");
+    audio.id = "audio-" + peerId;
+    audio.autoplay = true;
+    document.body.appendChild(audio);
+  }
+
+  audio.srcObject = stream;
+}
+
+function toggleMute() {
+  if (!localStream) return;
+
+  isMuted = !isMuted;
+
+  localStream.getAudioTracks().forEach(track => {
+    track.enabled = !isMuted;
+  });
+}
+
+function leaveVoice() {
+  Object.values(activeCalls).forEach(call => call.close());
+  activeCalls = {};
+
+  if (localStream) {
+    localStream.getTracks().forEach(track => track.stop());
+    localStream = null;
+  }
+
+  document.getElementById("voice-ui").style.display = "none";
+}
+
+function updateVoiceUsers() {
+  const container = document.getElementById("voice-users");
+  container.innerHTML = "";
+
+  const users = isHost
+    ? connections.map(c => c.nickname)
+    : [myNickname];
+
+  users.unshift(myNickname + " (You)");
+
+  users.forEach(name => {
+    const div = document.createElement("div");
+    div.className = "voice-user";
+    div.textContent = name;
+    container.appendChild(div);
+  });
+}
