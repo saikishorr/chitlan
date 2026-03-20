@@ -394,3 +394,46 @@ body.dark .file-speed {
   color: #aaa;
 }
 
+
+.voice-ui {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 220px;
+  background: #2f3136;
+  color: white;
+  border-radius: 10px;
+  padding: 10px;
+  font-size: 14px;
+}
+
+.voice-header {
+  font-weight: bold;
+  margin-bottom: 8px;
+}
+
+.voice-users {
+  max-height: 120px;
+  overflow-y: auto;
+  margin-bottom: 10px;
+}
+
+.voice-user {
+  padding: 4px;
+  border-radius: 4px;
+  margin-bottom: 4px;
+  background: #40444b;
+}
+
+.voice-controls button {
+  width: 100%;
+  margin-top: 5px;
+  padding: 6px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.voice-controls button:nth-child(1) { background: #5865f2; color: white; }
+.voice-controls button:nth-child(2) { background: #faa61a; }
+.voice-controls button:nth-child(3) { background: #ed4245; color: white; }
