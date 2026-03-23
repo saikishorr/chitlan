@@ -10,6 +10,7 @@ let myColor = '';
 let localStream = null;
 let activeCalls = {};
 let isMuted = false;
+let isInCall = false;
 
 // File transfer state
 const CHUNK_SIZE = 3 * 1024 * 1024; // 3MB (required for large files)
@@ -86,6 +87,7 @@ function init() {
   });
 
   activeCalls[call.peer] = call;
+  updateVoiceUI();
 });
 
   if (isHost) {
@@ -593,10 +595,13 @@ navigator.serviceWorker.addEventListener("controllerchange", () => {
 
 
 async function startVoice() {
+  if (isInCall) return;
+
   try {
     localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
-    document.getElementById("voice-ui").style.display = "block";
+    isInCall = true;
+    updateVoiceUI();
     updateVoiceUsers();
 
     if (isHost) {
@@ -610,9 +615,10 @@ async function startVoice() {
   } catch (err) {
     alert("Microphone access denied");
   }
+
   if ((connections.length || 1) > 6) {
-  alert("Voice works best with max 6 users");
-}
+    alert("Voice works best with max 6 users");
+  }
 }
 
 function callPeer(peerId) {
@@ -649,6 +655,8 @@ function toggleMute() {
   localStream.getAudioTracks().forEach(track => {
     track.enabled = !isMuted;
   });
+
+  updateVoiceUI(); // 🔥 IMPORTANT
 }
 
 function leaveVoice() {
@@ -660,7 +668,10 @@ function leaveVoice() {
     localStream = null;
   }
 
-  document.getElementById("voice-ui").style.display = "none";
+  isInCall = false;
+  isMuted = false;
+
+  updateVoiceUI(); // ✅ UI resets but stays visible
 }
 
 function updateVoiceUsers() {
@@ -679,4 +690,23 @@ function updateVoiceUsers() {
     div.textContent = name;
     container.appendChild(div);
   });
+}
+
+function updateVoiceUI() {
+  const joinBtn = document.getElementById("joinBtn");
+  const muteBtn = document.getElementById("muteBtn");
+  const leaveBtn = document.getElementById("leaveBtn");
+
+  if (!isInCall) {
+    joinBtn.style.display = "block";
+    muteBtn.style.display = "none";
+    leaveBtn.style.display = "none";
+  } else {
+    joinBtn.style.display = "none";
+    muteBtn.style.display = "block";
+    leaveBtn.style.display = "block";
+  }
+
+  // Update mute button text
+  muteBtn.textContent = isMuted ? "Unmute" : "Mute";
 }
