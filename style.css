@@ -399,39 +399,46 @@ body.dark .file-speed {
   position: fixed;
   bottom: 20px;
   right: 20px;
-  width: 220px;
+  width: 240px;
   background: #2f3136;
   color: white;
-  border-radius: 10px;
-  padding: 10px;
+  border-radius: 12px;
+  padding: 12px;
   font-size: 14px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
 }
 
-.voice-header {
-  font-weight: bold;
-  margin-bottom: 8px;
-}
-
-.voice-users {
-  max-height: 120px;
-  overflow-y: auto;
-  margin-bottom: 10px;
-}
-
-.voice-user {
-  padding: 4px;
-  border-radius: 4px;
-  margin-bottom: 4px;
-  background: #40444b;
+.voice-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
 .voice-controls button {
   width: 100%;
-  margin-top: 5px;
-  padding: 6px;
+  padding: 8px;
   border: none;
-  border-radius: 5px;
+  border-radius: 6px;
   cursor: pointer;
+  font-weight: 500;
+}
+
+/* Join */
+#joinBtn {
+  background: #5865f2;
+  color: white;
+}
+
+/* Mute / Unmute */
+#muteBtn {
+  background: #faa61a;
+  color: black;
+}
+
+/* End Call */
+#leaveBtn {
+  background: #ed4245;
+  color: white;
 }
 
 .voice-controls button:nth-child(1) { background: #5865f2; color: white; }
