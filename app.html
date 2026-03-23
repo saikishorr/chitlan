@@ -122,10 +122,16 @@
   <div id="voice-users" class="voice-users"></div>
 
   <div class="voice-controls">
-    <button onclick="startVoice()">Join Voice</button>
-    <button onclick="toggleMute()">Mute</button>
-    <button onclick="leaveVoice()">Leave</button>
-  </div>
+  <button id="joinBtn" onclick="startVoice()">Join Voice</button>
+
+  <button id="muteBtn" onclick="toggleMute()" style="display:none;">
+    Mute
+  </button>
+
+  <button id="leaveBtn" onclick="leaveVoice()" style="display:none;">
+    📞 End Call
+  </button>
+</div>
 </div>
         <!-- File input -->
         <div class="file-group">
@@ -143,4 +149,3 @@
 <button id="installBtn" style="display:none;">Install App</button>
 </body>
 </html>
-
