@@ -92,7 +92,7 @@ function init() {
 
   if (isHost) {
     peer.on('connection', c => {
-      if (connections.length >= 10) {
+      if (connections.length >= 9) {
         c.send({ type: 'system', message: 'Room is full. Max 10 users allowed.' });
         c.close();
         return;
@@ -180,7 +180,7 @@ function sendMessage() {
   const data = { type: 'message', nickname: myNickname, color: myColor, message: msg };
 
   if (isHost) {
-    broadcast(myNickname, msg, myColor);
+    broadcast(myNickname, msg, myColor, null, false);
   } else if (conn) {
     conn.send(data);
   }
@@ -188,13 +188,15 @@ function sendMessage() {
   input.value = '';
 }
 
-function broadcast(nickname, message, color = '#000', exclude = null) {
+function broadcast(nickname, message, color = '#000', exclude = null, shouldAppendLocal = true) {
   const payload = { type: 'message', nickname, color, message };
   connections.forEach(c => {
     if (exclude && c.peer === exclude.peer) return;
     c.send(payload);
   });
-  appendMessage(nickname, message, color);
+  if (shouldAppendLocal) {
+    appendMessage(nickname, message, color);
+  }
 }
 
 function appendMessage(sender, msg, color = '#000', isSender = false) {
