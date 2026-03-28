@@ -201,6 +201,15 @@ body.dark .message.left {
   margin-bottom: 4px;
 }
 
+.message-time {
+  font-size: 0.75em;
+  margin-top: 6px;
+  opacity: 0.7;
+}
+
+body.dark .message-time {
+  opacity: 0.8;
+}
 /* ===== File message & preview styling ===== */
 
 .file-message {
@@ -444,3 +453,6 @@ body.dark .file-speed {
 .voice-controls button:nth-child(1) { background: #5865f2; color: white; }
 .voice-controls button:nth-child(2) { background: #faa61a; }
 .voice-controls button:nth-child(3) { background: #ed4245; color: white; }
+
+
+
