@@ -17,6 +17,7 @@ const CHUNK_SIZE = 3 * 1024 * 1024; // 3MB (required for large files)
 const MAX_FILE_SIZE = 100 * 1024 * 1024 * 1024; // 100GB
 const RESEND_TIMEOUT = 4000; // retry missing chunks
 const RECONNECT_INTERVAL = 3000;
+const NOTIFICATION_SOUND_SRC = 'ding.mp3';
 
 
 const incomingFiles = {}; 
@@ -107,7 +108,7 @@ function init() {
           broadcast('System', `${c.nickname} has joined the chat`, '#666');
         } else if (data.type === 'message') {
           // normal text message from a joiner
-          broadcast(data.nickname, data.message, data.color, c);
+          broadcast(data.nickname, data.message, data.color, c, true, data.timestamp);
         } else if (data.type === 'file-chunk') {
           // file chunk from a joiner
           handleIncomingFileChunk(data);
@@ -150,7 +151,7 @@ function connectToHost() {
 
     conn.on('data', data => {
       if (data.type === 'message') {
-        appendMessage(data.nickname, data.message, data.color);
+        appendMessage(data.nickname, data.message, data.color, false, data.timestamp);
       } else if (data.type === 'system') {
         appendSystemMessage(data.message);
       } else if (data.type === 'file-chunk') {
@@ -175,12 +176,13 @@ function sendMessage() {
   const msg = input.value.trim();
   if (!msg) return;
 
-  appendMessage(myNickname, msg, myColor, true);
+  const timestamp = Date.now();
+  appendMessage(myNickname, msg, myColor, true, timestamp);
 
-  const data = { type: 'message', nickname: myNickname, color: myColor, message: msg };
+  const data = { type: 'message', nickname: myNickname, color: myColor, message: msg, timestamp };
 
   if (isHost) {
-    broadcast(myNickname, msg, myColor, null, false);
+    broadcast(myNickname, msg, myColor, null, false, timestamp);
   } else if (conn) {
     conn.send(data);
   }
@@ -188,18 +190,37 @@ function sendMessage() {
   input.value = '';
 }
 
-function broadcast(nickname, message, color = '#000', exclude = null, shouldAppendLocal = true) {
-  const payload = { type: 'message', nickname, color, message };
+function broadcast(nickname, message, color = '#000', exclude = null, shouldAppendLocal = true, timestamp = Date.now()) {
+  const payload = { type: 'message', nickname, color, message, timestamp };
   connections.forEach(c => {
     if (exclude && c.peer === exclude.peer) return;
     c.send(payload);
   });
   if (shouldAppendLocal) {
-    appendMessage(nickname, message, color);
+    appendMessage(nickname, message, color, false, timestamp);
   }
 }
 
-function appendMessage(sender, msg, color = '#000', isSender = false) {
+function formatMessageTime(timestamp) {
+  const parsed = Number(timestamp);
+  const date = Number.isFinite(parsed) ? new Date(parsed) : new Date();
+  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+function playNotificationSound() {
+  const sound = document.getElementById('notificationSound');
+  if (!sound) return;
+
+  if (sound.getAttribute('src') !== NOTIFICATION_SOUND_SRC) {
+    sound.setAttribute('src', NOTIFICATION_SOUND_SRC);
+    sound.load();
+  }
+
+  sound.currentTime = 0;
+  sound.play().catch(() => {});
+}
+
+function appendMessage(sender, msg, color = '#000', isSender = false, timestamp = Date.now()) {
   const messagesDiv = document.getElementById('messages');
   const div = document.createElement('div');
   div.className = 'message ' + (isSender || sender === myNickname ? 'right' : 'left');
@@ -207,15 +228,14 @@ function appendMessage(sender, msg, color = '#000', isSender = false) {
   // Escape text to avoid HTML injection
   const safeMsg = msg.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
-  div.innerHTML = `<strong style="color:${color}">${sender}</strong>${safeMsg}`;
+  const formattedTime = formatMessageTime(timestamp);
+  div.innerHTML = `<strong style="color:${color}">${sender}</strong>${safeMsg}<div class="message-time">${formattedTime}</div>`;
   messagesDiv.appendChild(div);
   messagesDiv.scrollTop = messagesDiv.scrollHeight;
 
   // Play sound only for incoming non-system messages
   if (!isSender && sender !== 'System') {
-    const sound = document.getElementById('notificationSound');
-    sound.currentTime = 0;
-    sound.play().catch(() => {});
+    playNotificationSound();
   }
 }
 
@@ -337,9 +357,7 @@ function markFileComplete(fileId, isSender) {
 
   // Play sound on completed incoming file
   if (!isSender) {
-    const sound = document.getElementById('notificationSound');
-    sound.currentTime = 0;
-    sound.play().catch(() => {});
+    playNotificationSound();
   }
 }
 
