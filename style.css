@@ -1,6 +1,3 @@
-/* Updated style.css for improved layout, message alignment, file previews,
-   progress bars, IP display, and dark mode toggle */
-
 :root {
   --bg-light: #f9f9f9;
   --bg-dark: #121212;
@@ -30,20 +27,21 @@ body.dark {
 }
 
 h1 {
-  font-size: 1.5em;
+  font-size: 1.7em;
   margin-bottom: 10px;
   text-align: center;
 }
 
 .form-group {
   margin-bottom: 15px;
-  max-width: 600px;
+  max-width: 700px;
   margin-left: auto;
   margin-right: auto;
 }
 
 input,
-button {
+button,
+select {
   padding: 10px;
   margin: 5px 0;
   box-sizing: border-box;
@@ -54,13 +52,12 @@ button {
 }
 
 body.dark input,
-body.dark button {
+body.dark button,
+body.dark select {
   background: var(--input-bg-dark);
   color: var(--text-dark);
   border: 1px solid var(--border-color-dark);
 }
-
-/* ===== Top right bar (theme + IP) ===== */
 
 .top-right-bar {
   position: fixed;
@@ -97,10 +94,8 @@ body.dark .ip-display {
   background: rgba(255, 255, 255, 0.1);
 }
 
-/* ===== Chat layout ===== */
-
 #chat-ui {
-  max-width: 900px;
+  max-width: 1100px;
   margin: 20px auto;
 }
 
@@ -110,12 +105,12 @@ body.dark .ip-display {
 }
 
 #user-list {
-  width: 200px;
+  width: 220px;
   background-color: var(--input-bg-light);
   border: 1px solid var(--border-color-light);
   padding: 10px;
   border-radius: 5px;
-  height: 300px;
+  height: 400px;
   overflow-y: auto;
 }
 
@@ -151,7 +146,7 @@ body.dark #user-list {
 }
 
 #messages {
-  height: 250px;
+  height: 300px;
   background: var(--input-bg-light);
   padding: 10px;
   overflow-y: auto;
@@ -160,6 +155,7 @@ body.dark #user-list {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  scroll-behavior: smooth;
 }
 
 body.dark #messages {
@@ -173,6 +169,7 @@ body.dark #messages {
   word-wrap: break-word;
   white-space: pre-line;
   font-size: 0.95em;
+  animation: fadeInUp 0.2s ease;
 }
 
 .message.right {
@@ -210,7 +207,6 @@ body.dark .message.left {
 body.dark .message-time {
   opacity: 0.8;
 }
-/* ===== File message & preview styling ===== */
 
 .file-message {
   max-width: 80%;
@@ -274,8 +270,6 @@ body.dark .file-progress {
   display: block;
 }
 
-/* ===== Input area ===== */
-
 .input-group {
   display: flex;
   gap: 10px;
@@ -283,16 +277,9 @@ body.dark .file-progress {
 
 .input-group input {
   flex: 1;
-  padding: 10px;
-  font-size: 1em;
-  border-radius: 5px;
-  border: 1px solid var(--border-color-light);
 }
 
 .input-group button {
-  padding: 10px 20px;
-  font-size: 1em;
-  border-radius: 5px;
   background-color: #007bff;
   color: white;
   border: none;
@@ -302,8 +289,6 @@ body.dark .file-progress {
 .input-group button:hover {
   background-color: #0056b3;
 }
-
-/* ===== File input row ===== */
 
 .file-group {
   display: flex;
@@ -318,9 +303,6 @@ body.dark .file-progress {
 }
 
 .file-group button {
-  padding: 10px 20px;
-  font-size: 1em;
-  border-radius: 5px;
   background-color: #28a745;
   color: white;
   border: none;
@@ -330,8 +312,6 @@ body.dark .file-progress {
 .file-group button:hover {
   background-color: #218838;
 }
-
-/* ===== Forms / labels ===== */
 
 label {
   display: block;
@@ -343,13 +323,6 @@ input[type="text"],
 input[type="color"],
 select {
   width: 100%;
-  padding: 10px;
-  margin-top: 5px;
-  margin-bottom: 10px;
-  border-radius: 5px;
-  border: 1px solid #ccc;
-  box-sizing: border-box;
-  font-size: 1em;
   background-color: #fff;
   color: #000;
 }
@@ -362,34 +335,64 @@ body.dark select {
   border-color: #555;
 }
 
-select option {
-  padding: 10px;
+.typing-indicator {
+  font-size: 13px;
+  color: #666;
+  margin: 4px 0 10px;
+  min-height: 18px;
 }
 
-/* ===== Responsive ===== */
-
-@media (max-width: 768px) {
-  .chat-container {
-    flex-direction: column;
-  }
-
-  #user-list {
-    width: 100%;
-    margin-bottom: 10px;
-    height: auto;
-  }
+body.dark .typing-indicator {
+  color: #aaa;
 }
 
-@media (max-width: 600px) {
-  .file-group {
-    flex-direction: column;
-    align-items: stretch;
-  }
+.screen-share-bar {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
 
-  .file-group input[type="file"],
-  .file-group button {
-    width: 100%;
-  }
+.screen-share-bar button {
+  background: #6f42c1;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+}
+
+.screen-share-bar button:hover {
+  background: #5a32a3;
+}
+
+.screen-area {
+  margin-top: 18px;
+  background: var(--input-bg-light);
+  border: 1px solid var(--border-color-light);
+  padding: 12px;
+  border-radius: 10px;
+}
+
+body.dark .screen-area {
+  background: var(--input-bg-dark);
+  border-color: var(--border-color-dark);
+}
+
+#screenViewer {
+  width: 100%;
+  max-height: 420px;
+  background: #000;
+  border-radius: 10px;
+  margin-top: 10px;
+}
+
+.screen-status {
+  margin-top: 10px;
+  font-size: 14px;
+  color: #666;
+}
+
+body.dark .screen-status {
+  color: #aaa;
 }
 
 .file-speed {
@@ -403,12 +406,11 @@ body.dark .file-speed {
   color: #aaa;
 }
 
-
 .voice-ui {
   position: fixed;
   bottom: 20px;
   right: 20px;
-  width: 240px;
+  width: 260px;
   background: #2f3136;
   color: white;
   border-radius: 12px;
@@ -432,27 +434,79 @@ body.dark .file-speed {
   font-weight: 500;
 }
 
-/* Join */
 #joinBtn {
   background: #5865f2;
   color: white;
 }
 
-/* Mute / Unmute */
 #muteBtn {
   background: #faa61a;
   color: black;
 }
 
-/* End Call */
 #leaveBtn {
   background: #ed4245;
   color: white;
 }
 
-.voice-controls button:nth-child(1) { background: #5865f2; color: white; }
-.voice-controls button:nth-child(2) { background: #faa61a; }
-.voice-controls button:nth-child(3) { background: #ed4245; color: white; }
+.voice-user {
+  padding: 6px 10px;
+  margin-top: 6px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 8px;
+  font-size: 13px;
+}
 
+body.dark .voice-user {
+  background: rgba(255,255,255,0.06);
+}
 
+@media (max-width: 768px) {
+  .chat-container {
+    flex-direction: column;
+  }
 
+  #user-list {
+    width: 100%;
+    margin-bottom: 10px;
+    height: auto;
+  }
+
+  .voice-ui {
+    position: static;
+    width: auto;
+    margin: 20px auto 0;
+  }
+}
+
+@media (max-width: 600px) {
+  .file-group,
+  .screen-share-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .file-group input[type="file"],
+  .file-group button,
+  .screen-share-bar button {
+    width: 100%;
+  }
+
+  .top-right-bar {
+    position: static;
+    justify-content: center;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
