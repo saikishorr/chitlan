@@ -1,24 +1,68 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <!-- Basic SEO -->
   <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ChitLAN App</title>
+
+  <title>ChitLAN – Secure Local Network Group Chat & File Sharing</title>
+
+  <meta name="description"
+        content="ChitLAN is a fast, secure peer-to-peer group chat and file sharing web app for local networks. Chat instantly, share large files, and connect up to 10 users without servers or cloud storage." />
+
+  <meta name="keywords"
+        content="saikishor rasala, Saikishor, Rasala, Saikishor Rasala, ChitLAN, LAN chat, local network chat, peer to peer chat, file sharing LAN, browser chat app, offline chat, PeerJS chat" />
+
+  <meta name="author" content="Saikishor Rasala" />
+  <meta name="robots" content="index, follow" />
+
+  <!-- Canonical URL (IMPORTANT for Google indexing) -->
+  <!-- Replace with your real public URL after hosting -->
+  <link rel="canonical" href="https://saikishorr.github.io/chitlan" />
+
+  <!-- Open Graph (WhatsApp, LinkedIn, Facebook preview) -->
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="ChitLAN – Secure Local Network Group Chat" />
+  <meta property="og:description"
+        content="Peer-to-peer LAN chat and file sharing app. No servers. No cloud. Fast and private communication." />
+  <meta property="og:url" content="https://saikishorr.github.io/chitlan" />
+  <meta property="og:image" content="https://saikishorr.github.io/chitlan/og-image2.3mb.png" />
+
+  <!-- Twitter Card 
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="ChitLAN – Secure Local Network Group Chat" />
+  <meta name="twitter:description"
+        content="Chat and share files instantly on your local network using ChitLAN." />
+  <meta name="twitter:image" content="https://your-domain.com/og-image.png" />-->
+
+  <!-- Performance -->
+  <link rel="preconnect" href="https://unpkg.com" crossorigin />
+
+  <!-- Styles -->
   <link rel="stylesheet" href="style.css" />
 </head>
+
 <body>
 
+  <!-- Top-right bar: theme + IP address -->
   <div class="top-right-bar">
-    <button class="theme-toggle" onclick="toggleTheme()">🌙 Theme</button>
-    <button class="theme-toggle" id="installBtn" style="display:none;">📲 Install</button>
-    <div class="ip-display" id="ip-display">Detecting IP...</div>
+    <button class="theme-toggle" onclick="toggleTheme()">Black/White</button>
+    <span id="ip-display" class="ip-display">IP: --</span>
   </div>
 
-  <h1>ChitLAN</h1>
+  <!-- Notification sound -->
+  <audio
+    id="notificationSound"
+    src="https://assets.mixkit.co/sfx/preview/mixkit-clear-announce-tones-2861.mp3"
+    preload="auto">
+  </audio>
 
+  <h1>ChitLAN – Talk freely on your local network</h1>
+
+  <!-- User setup -->
   <div class="form-group">
-    <label>Nickname</label>
-    <input type="text" id="nickname" placeholder="Enter nickname" />
+    <input id="nickname" placeholder="Enter your nickname" />
 
     <label for="color">Choose Color:</label>
     <select id="color">
@@ -34,82 +78,64 @@
       <option value="#e83e8c" style="color: #e83e8c">Pink</option>
     </select>
 
-    <label>Select Role</label>
-    <div>
-      <label><input type="radio" name="role" value="host" checked /> Host</label>
-      <label><input type="radio" name="role" value="join" /> Join</label>
+    <div class="radio">
+      <label>
+        <input type="radio" name="role" value="host" checked>
+        Host Room
+      </label>
+      <label>
+        <input type="radio" name="role" value="joiner">
+        Join Room
+      </label>
     </div>
 
     <button onclick="init()">Start</button>
   </div>
 
+  <!-- Connection info -->
   <div class="form-group">
-    <label>Your Room ID</label>
-    <div class="input-group">
-      <input type="text" id="peer-id" readonly />
-      <button onclick="copyPeerId()">Copy ID</button>
-    </div>
+    <input id="peer-id" readonly placeholder="Your Peer ID (Share if host)" />
+    <input id="connect-id" placeholder="Host's Peer ID (if joining)" />
+    <button onclick="connectToHost()">Connect</button>
   </div>
 
-  <div class="form-group">
-    <label>Connect to Host</label>
-    <div class="input-group">
-      <input type="text" id="connect-id" placeholder="Enter host Peer ID" />
-      <button onclick="connectToHost()">Connect</button>
-    </div>
-  </div>
-
-  <div id="chat-ui" style="display:none;">
+  <!-- Chat UI -->
+  <div id="chat-ui" style="display: none;">
     <div class="chat-container">
 
+      <!-- User list -->
       <div id="user-list">
-        <h3>Users (<span id="userCount">0</span>)</h3>
+        <strong>
+          Online Users (<span id="userCount">0</span>/10)
+        </strong>
         <ul id="userNames"></ul>
       </div>
 
+      <!-- Chat area -->
       <div class="chat-box">
         <div id="messages"></div>
-        <div id="typing-indicator" class="typing-indicator"></div>
 
+        <!-- Message input -->
         <div class="input-group">
-          <input type="text" id="msg-input" placeholder="Type a message..." />
+          <input id="msg-input" placeholder="Type a message..." />
           <button onclick="sendMessage()">Send</button>
         </div>
 
+        <!-- File input -->
         <div class="file-group">
           <input type="file" id="fileInput" />
           <button onclick="sendFile()">Send File</button>
         </div>
 
-        <div class="screen-share-bar">
-          <button onclick="startScreenShare()" id="shareScreenBtn">🖥️ Share Screen</button>
-          <button onclick="stopScreenShare()" id="stopScreenBtn" style="display:none;">🛑 Stop Sharing</button>
-        </div>
-
-        <div class="screen-area">
-          <h3>Live Screen Share</h3>
-          <video id="screenViewer" autoplay playsinline controls></video>
-          <div id="screenStatus" class="screen-status">No active screen share</div>
-        </div>
       </div>
     </div>
   </div>
 
-  <div class="voice-ui">
-    <h3>Voice Chat</h3>
-    <div class="voice-controls">
-      <button id="joinBtn" onclick="startVoice()">Join Voice</button>
-      <button id="muteBtn" onclick="toggleMute()" style="display:none;">Mute</button>
-      <button id="leaveBtn" onclick="leaveVoice()" style="display:none;">Leave Voice</button>
-    </div>
-    <div id="voice-users"></div>
-  </div>
-
-  <audio id="notificationSound" preload="auto">
-    <source src="ding.mp3" type="audio/mpeg">
-  </audio>
-
-  <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+  <!-- Scripts -->
+  <script src="https://unpkg.com/peerjs@1.5.5/dist/peerjs.min.js"></script>
   <script src="script.js"></script>
+
 </body>
 </html>
+
+
