@@ -6,8 +6,8 @@ Only the latest stable version of PeerChat is currently supported for security u
 
 | Version | Supported |
 |---------|-----------|
-| 1.1.x   | ✅ Yes     |
-| 1.0.x   | ❌ No      |
+| 1.2.1   | ✅ Yes     |
+| 1.0.0   | ❌ No      |
 
 ---
 
