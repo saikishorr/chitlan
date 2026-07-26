@@ -1,0 +1,193 @@
+@keyframes fadeIn{
+from{opacity:0;}
+to{opacity:1;}
+}
+@keyframes fadeUp{
+from{
+opacity:0;
+transform:translateY(20px);
+}
+to{
+opacity:1;
+transform:translateY(0);
+}
+}
+@keyframes fadeDown{
+from{
+opacity:0;
+transform:translateY(-20px);
+}
+to{
+opacity:1;
+transform:translateY(0);
+}
+}
+@keyframes slideLeft{
+from{
+opacity:0;
+transform:translateX(-30px);
+}
+to{
+opacity:1;
+transform:translateX(0);
+}
+}
+@keyframes slideRight{
+from{
+opacity:0;
+transform:translateX(30px);
+}
+to{
+opacity:1;
+transform:translateX(0);
+}
+}
+@keyframes zoomIn{
+from{
+opacity:0;
+transform:scale(.9);
+}
+to{
+opacity:1;
+transform:scale(1);
+}
+}
+@keyframes pulse{
+0%,100%{
+transform:scale(1);
+opacity:1;
+}
+50%{
+transform:scale(1.18);
+opacity:.7;
+}
+}
+@keyframes voiceRing{
+0%{
+transform:scale(1);
+opacity:1;
+}
+100%{
+transform:scale(1.35);
+opacity:0;
+}
+}
+@keyframes wave{
+0%,100%{
+transform:scaleY(.4);
+opacity:.5;
+}
+50%{
+transform:scaleY(1.2);
+opacity:1;
+}
+}
+@keyframes float{
+0%,100%{
+transform:translateY(0) translateX(0);
+}
+25%{
+transform:translateY(-20px) translateX(15px);
+}
+50%{
+transform:translateY(10px) translateX(-10px);
+}
+75%{
+transform:translateY(-10px) translateX(20px);
+}
+}
+@keyframes spin{
+from{
+transform:rotate(0deg);
+}
+to{
+transform:rotate(360deg);
+}
+}
+@keyframes shimmer{
+0%{
+background-position:-200% 0;
+}
+100%{
+background-position:200% 0;
+}
+}
+@keyframes blink{
+0%,100%{
+opacity:1;
+}
+50%{
+opacity:.35;
+}
+}
+@keyframes bounce{
+0%,100%{
+transform:translateY(0);
+}
+50%{
+transform:translateY(-8px);
+}
+}
+.fade-in{animation:fadeIn .35s ease both;}
+.fade-up{animation:fadeUp .35s ease both;}
+.fade-down{animation:fadeDown .35s ease both;}
+.slide-left{animation:slideLeft .35s ease both;}
+.slide-right{animation:slideRight .35s ease both;}
+.zoom-in{animation:zoomIn .3s ease both;}
+.float{animation:float 10s ease-in-out infinite;}
+.spin{animation:spin 1s linear infinite;}
+.pulse{animation:pulse 1.5s infinite;}
+.bounce{animation:bounce 1s infinite;}
+.blink{animation:blink 1s infinite;}
+.glow{
+box-shadow:0 0 20px rgba(124,92,255,.45);
+}
+.glow-success{
+box-shadow:0 0 18px rgba(34,197,94,.45);
+}
+.glow-danger{
+box-shadow:0 0 18px rgba(239,68,68,.45);
+}
+.loading{
+background:linear-gradient(90deg,rgba(255,255,255,.04),rgba(255,255,255,.12),rgba(255,255,255,.04));
+background-size:200% 100%;
+animation:shimmer 1.6s linear infinite;
+}
+.hover-lift{
+transition:var(--transition);
+}
+.hover-lift:hover{
+transform:translateY(-4px);
+box-shadow:0 18px 40px rgba(0,0,0,.25);
+}
+.hover-scale{
+transition:var(--transition);
+}
+.hover-scale:hover{
+transform:scale(1.03);
+}
+.rotate:hover{
+transform:rotate(8deg);
+transition:var(--transition);
+}
+.toast{
+animation:slideRight .35s ease;
+}
+.modal{
+animation:zoomIn .3s ease;
+}
+.message.self{
+animation:slideRight .25s ease;
+}
+.message.other{
+animation:slideLeft .25s ease;
+}
+.message.system{
+animation:fadeDown .25s ease;
+}
+.user-item,
+.voice-user,
+.file-item,
+.viewer{
+animation:fadeUp .3s ease;
+}

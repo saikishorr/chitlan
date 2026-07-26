@@ -1,0 +1,330 @@
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+--bg:#070B14;
+--bg2:#0D1224;
+--surface:rgba(255,255,255,.05);
+--surface2:rgba(255,255,255,.08);
+--border:rgba(255,255,255,.08);
+--primary:#7C5CFF;
+--secondary:#22D3EE;
+--success:#22C55E;
+--danger:#EF4444;
+--warning:#F59E0B;
+--text:#F8FAFC;
+--muted:#94A3B8;
+--shadow:0 20px 60px rgba(0,0,0,.35);
+--radius:22px;
+--transition:.3s ease;
+}
+html{
+height:100%;
+scroll-behavior:smooth;
+}
+
+body{
+min-height:100vh;
+font-family:'Inter',sans-serif;
+background:var(--bg);
+color:var(--text);
+position:relative;
+overflow-x:hidden;
+overflow-y:auto;
+}
+a{text-decoration:none;color:inherit}
+button,input,select{
+font-family:inherit;
+outline:none;
+}
+button{
+cursor:pointer;
+border:none;
+transition:var(--transition);
+}
+img{
+max-width:100%;
+display:block;
+}
+::-webkit-scrollbar{
+width:8px;
+height:8px;
+}
+::-webkit-scrollbar-thumb{
+background:#3A4368;
+border-radius:30px;
+}
+::-webkit-scrollbar-track{
+background:transparent;
+}
+.background{
+position:fixed;
+inset:0;
+overflow:hidden;
+z-index:-2;
+background:
+radial-gradient(circle at top left,#322178 0%,transparent 35%),
+radial-gradient(circle at bottom right,#0C728F 0%,transparent 35%),
+linear-gradient(135deg,#070B14,#0D1224);
+}
+.gradient{
+position:absolute;
+width:500px;
+height:500px;
+border-radius:50%;
+filter:blur(120px);
+opacity:.18;
+animation:float 12s ease-in-out infinite;
+}
+.gradient.one{
+top:-180px;
+left:-150px;
+background:#7C5CFF;
+}
+.gradient.two{
+right:-200px;
+bottom:-180px;
+background:#22D3EE;
+animation-delay:5s;
+}
+.grid{
+position:absolute;
+inset:0;
+background-image:
+linear-gradient(rgba(255,255,255,.03) 1px,transparent 1px),
+linear-gradient(90deg,rgba(255,255,255,.03) 1px,transparent 1px);
+background-size:40px 40px;
+mask-image:radial-gradient(circle,#fff 35%,transparent 100%);
+}
+.navbar{
+width:100%;
+height:78px;
+padding:0 40px;
+display:flex;
+align-items:center;
+justify-content:space-between;
+position:sticky;
+top:0;
+z-index:100;
+background:rgba(7,11,20,.65);
+backdrop-filter:blur(20px);
+border-bottom:1px solid var(--border);
+}
+.nav-left,.nav-center,.nav-right{
+display:flex;
+align-items:center;
+gap:18px;
+}
+.logo{
+display:flex;
+align-items:center;
+gap:15px;
+}
+.logo-icon{
+width:52px;
+height:52px;
+border-radius:18px;
+display:flex;
+align-items:center;
+justify-content:center;
+font-size:24px;
+background:linear-gradient(135deg,var(--primary),var(--secondary));
+box-shadow:0 12px 35px rgba(124,92,255,.35);
+}
+.logo h2{
+font-size:22px;
+font-weight:700;
+}
+.logo p{
+font-size:13px;
+color:var(--muted);
+margin-top:2px;
+}
+.connection-status{
+display:flex;
+align-items:center;
+gap:10px;
+padding:10px 18px;
+background:var(--surface);
+border:1px solid var(--border);
+border-radius:30px;
+}
+.status-dot{
+width:10px;
+height:10px;
+border-radius:50%;
+background:var(--danger);
+box-shadow:0 0 12px var(--danger);
+}
+.icon-btn{
+width:46px;
+height:46px;
+border-radius:14px;
+background:var(--surface);
+border:1px solid var(--border);
+color:var(--text);
+font-size:18px;
+display:flex;
+align-items:center;
+justify-content:center;
+}
+.icon-btn:hover{
+background:var(--surface2);
+transform:translateY(-3px);
+box-shadow:0 10px 25px rgba(124,92,255,.25);
+}
+.hero{
+width:min(1450px,95%);
+margin:35px auto;
+display:grid;
+grid-template-columns:1.2fr 480px;
+gap:35px;
+align-items:center;
+}
+.hero-left h1{
+font-size:64px;
+line-height:1.08;
+font-weight:800;
+margin:18px 0;
+max-width:620px;
+}
+.hero-left p{
+font-size:18px;
+line-height:1.8;
+max-width:620px;
+color:var(--muted);
+}
+.hero-badge{
+display:inline-flex;
+align-items:center;
+padding:10px 18px;
+background:rgba(124,92,255,.12);
+border:1px solid rgba(124,92,255,.3);
+border-radius:50px;
+font-size:13px;
+font-weight:600;
+color:#C4B5FD;
+}
+.connection-card{
+background:var(--surface);
+border:1px solid var(--border);
+border-radius:var(--radius);
+padding:30px;
+backdrop-filter:blur(18px);
+box-shadow:var(--shadow);
+}
+.connection-card h3{
+font-size:24px;
+margin-bottom:25px;
+}
+.field{
+margin-bottom:22px;
+}
+.field label{
+display:block;
+margin-bottom:10px;
+font-size:14px;
+font-weight:600;
+color:#CBD5E1;
+}
+.field input,
+.field select{
+width:100%;
+height:52px;
+padding:0 16px;
+background:rgba(255,255,255,.04);
+border:1px solid var(--border);
+border-radius:14px;
+color:var(--text);
+font-size:15px;
+transition:var(--transition);
+}
+.field input:focus,
+.field select:focus{
+border-color:var(--primary);
+box-shadow:0 0 0 4px rgba(124,92,255,.15);
+}
+.field select option{
+background-color:#0d1326 !important;
+color:#ffffff !important;
+padding:12px 16px;
+font-size:15px;
+}
+.copy-group{
+display:flex;
+gap:10px;
+}
+.copy-group button{
+padding:0 18px;
+background:linear-gradient(135deg,var(--primary),var(--secondary));
+color:#fff;
+border-radius:12px;
+font-weight:600;
+}
+.role-selector{
+display:flex;
+gap:25px;
+padding:8px 0;
+}
+.role-selector label{
+display:flex;
+align-items:center;
+gap:8px;
+cursor:pointer;
+font-size:15px;
+}
+.launch-btn{
+width:100%;
+height:56px;
+margin-top:12px;
+border-radius:16px;
+font-size:16px;
+font-weight:700;
+color:#fff;
+background:linear-gradient(135deg,var(--primary),var(--secondary));
+box-shadow:0 15px 35px rgba(124,92,255,.35);
+}
+.launch-btn:hover{
+transform:translateY(-3px);
+box-shadow:0 22px 45px rgba(124,92,255,.45);
+}
+.workspace{
+width:min(1600px,96%);
+margin:0 auto 20px;
+display:grid;
+grid-template-columns:280px 1fr 340px;
+gap:24px;
+height:calc(100vh - 100px);
+max-height:calc(100vh - 100px);
+align-items:stretch;
+overflow:hidden;
+}
+
+.sidebar, .right-panel{
+height:100%;
+max-height:100%;
+overflow-y:auto;
+display:flex;
+flex-direction:column;
+gap:20px;
+padding-right:4px;
+}
+
+.sidebar::-webkit-scrollbar,
+.right-panel::-webkit-scrollbar{
+width:5px;
+}
+
+.sidebar::-webkit-scrollbar-thumb,
+.right-panel::-webkit-scrollbar-thumb{
+background:rgba(124,92,255,.25);
+border-radius:10px;
+}
+
+.status-dot.connected{
+background:var(--success);
+box-shadow:0 0 12px var(--success);
+}
+
+.status-dot.connecting{
+background:var(--warning);
+box-shadow:0 0 12px var(--warning);
+}

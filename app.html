@@ -1,0 +1,1188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>ChitLAN v3.0</title>
+
+<meta name="description" content="Real-Time LAN Collaboration Platform">
+<meta name="theme-color" content="#070B14">
+
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💬</text></svg>">
+
+<link rel="stylesheet" href="css/app.css">
+<link rel="stylesheet" href="css/sidebar.css">
+<link rel="stylesheet" href="css/chat.css">
+<link rel="stylesheet" href="css/voice.css">
+<link rel="stylesheet" href="css/files.css">
+<link rel="stylesheet" href="css/screen.css">
+<link rel="stylesheet" href="css/animations.css">
+<link rel="stylesheet" href="css/responsive.css">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+<script src="https://unpkg.com/peerjs@1.5.5/dist/peerjs.min.js"></script>
+
+</head>
+
+<body>
+
+<div class="background">
+<div class="gradient one"></div>
+<div class="gradient two"></div>
+<div class="grid"></div>
+</div>
+
+<header class="navbar">
+
+<div class="nav-left">
+
+<div class="logo">
+
+<div class="logo-icon">
+💬
+</div>
+
+<div>
+
+<h2>ChitLAN</h2>
+
+<p>Real-Time Collaboration</p>
+
+</div>
+
+</div>
+
+</div>
+
+<div class="nav-center">
+
+<div class="connection-status">
+
+<span class="status-dot" id="connectionDot"></span>
+
+<span id="navConnectionState">
+
+Disconnected
+
+</span>
+
+</div>
+
+</div>
+
+<div class="nav-right">
+
+<button id="themeToggle" class="icon-btn">
+
+🌙
+
+</button>
+
+<button id="installBtn" class="icon-btn" style="display:none;">
+
+📲
+
+</button>
+
+<button class="icon-btn">
+
+⚙
+
+</button>
+<div id="ip-display"></div>
+</div>
+
+</header>
+
+<section class="hero">
+
+<div class="hero-left">
+
+<div class="hero-badge">
+
+Version 3.0
+
+</div>
+
+<h1>
+
+Connect
+
+Collaborate
+
+Share
+
+</h1>
+
+<p>
+
+Peer-to-peer messaging, voice chat,
+screen sharing and large file transfer
+without servers.
+
+</p>
+
+</div>
+
+<div class="hero-right">
+
+<div class="connection-card">
+
+<h3>
+
+Start Session
+
+</h3>
+
+<div class="field">
+
+<label>
+
+Nickname
+
+</label>
+
+<input
+type="text"
+id="nickname"
+placeholder="Enter nickname">
+
+</div>
+
+<div class="field">
+
+<label>
+
+Choose Color
+
+</label>
+
+<select id="color">
+
+<option value="#60a5fa">Blue</option>
+
+<option value="#4ade80">Green</option>
+
+<option value="#f87171">Red</option>
+
+<option value="#fbbf24">Orange</option>
+
+<option value="#c084fc">Purple</option>
+
+<option value="#38bdf8">Cyan</option>
+
+<option value="#f472b6">Pink</option>
+
+<option value="#a78bfa">Violet</option>
+
+</select>
+
+</div>
+
+<div class="field">
+
+<label>
+
+Role
+
+</label>
+
+<div class="role-selector">
+
+<label>
+
+<input
+type="radio"
+name="role"
+value="host"
+checked>
+
+Host
+
+</label>
+
+<label>
+
+<input
+type="radio"
+name="role"
+value="join">
+
+Join
+
+</label>
+
+</div>
+
+</div>
+
+<div class="field">
+
+<label>
+
+Your Peer ID
+
+</label>
+
+<div class="copy-group">
+
+<input
+type="text"
+id="peer-id"
+readonly>
+
+<button id="copyPeer">
+
+Copy
+
+</button>
+
+</div>
+
+</div>
+
+<div class="field">
+
+<label>
+
+Connect to Host
+
+</label>
+
+<div class="copy-group">
+
+<input
+type="text"
+id="connect-id"
+placeholder="Peer ID">
+
+<button id="connectBtn">
+
+Connect
+
+</button>
+
+</div>
+
+</div>
+
+<button
+class="launch-btn"
+id="launchBtn">
+
+Launch Workspace
+
+</button>
+
+</div>
+
+</div>
+
+</section>
+
+<main class="workspace">
+<aside class="sidebar">
+
+<div class="sidebar-top">
+
+<div class="profile-card">
+
+<div class="profile-avatar" id="profileAvatar">
+
+S
+
+</div>
+
+<div>
+
+<h3 id="profileName">
+
+Guest User
+
+</h3>
+
+<p id="profileRole">
+
+Host
+
+</p>
+
+</div>
+
+</div>
+
+</div>
+
+<div class="sidebar-section">
+
+<h4>
+
+Online Users
+
+</h4>
+
+<div id="userNames" class="user-list">
+
+<div class="empty-state">
+
+Waiting for users...
+
+</div>
+
+</div>
+
+</div>
+
+<div class="sidebar-section">
+
+<h4>
+
+Room Information
+
+</h4>
+
+<div class="info-card">
+
+<div class="info-row">
+
+<span>
+
+Connection
+
+</span>
+
+<strong id="sidebarConnectionState">
+
+Offline
+
+</strong>
+
+</div>
+
+<div class="info-row">
+
+<span>
+
+Role
+
+</span>
+
+<strong id="currentRole">
+
+Host
+
+</strong>
+
+</div>
+
+<div class="info-row">
+
+<span>
+
+Peers
+
+</span>
+
+<strong id="peerCount">
+
+0
+
+</strong>
+
+</div>
+
+<div class="info-row">
+
+<span>
+
+Messages
+
+</span>
+
+<strong id="messageCount">
+
+0
+
+</strong>
+
+</div>
+
+</div>
+
+</div>
+
+<div class="sidebar-section">
+
+<h4>
+
+Quick Actions
+
+</h4>
+
+<div class="quick-actions">
+
+<button id="copyRoomBtn" class="action-btn">
+
+📋
+
+<span>
+
+Copy Room ID
+
+</span>
+
+</button>
+
+<button id="shareRoomBtn" class="action-btn">
+
+🔗
+
+<span>
+
+Share Invite
+
+</span>
+
+</button>
+
+<button id="clearChatBtn" class="action-btn">
+
+🗑
+
+<span>
+
+Clear Chat
+
+</span>
+
+</button>
+
+<button id="disconnectBtn" class="action-btn danger">
+
+⛔
+
+<span>
+
+Disconnect
+
+</span>
+
+</button>
+
+</div>
+
+</div>
+
+<div class="sidebar-section">
+
+<h4>
+
+Activity
+
+</h4>
+
+<div id="activityFeed" class="activity-feed">
+
+<div class="activity-item">
+
+<div class="activity-dot"></div>
+
+<div>
+
+<p>
+
+Workspace Ready
+
+</p>
+
+<span>
+
+Waiting for connection...
+
+</span>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+</aside>
+<section class="chat-container">
+
+<header class="chat-header">
+
+<div class="chat-title">
+
+<div class="workspace-icon">
+
+💬
+
+</div>
+
+<div>
+
+<h2>
+
+Workspace
+
+</h2>
+
+<p id="roomStatus">
+
+Ready to collaborate
+
+</p>
+
+</div>
+
+</div>
+
+<div class="chat-actions">
+
+<button
+class="header-btn"
+id="voiceToggleBtn"
+title="Voice Chat">
+
+🎤
+
+</button>
+
+<button
+class="header-btn"
+id="videoToggleBtn"
+title="Camera Video Meeting">
+
+📹
+
+</button>
+
+<button
+class="header-btn"
+id="screenShareBtn"
+title="Screen Share">
+
+🖥
+
+</button>
+
+<button
+class="header-btn"
+id="fileShareBtn"
+title="Send File">
+
+📁
+
+</button>
+
+<button
+class="header-btn"
+id="fullscreenBtn"
+title="Fullscreen">
+
+⛶
+
+</button>
+
+</div>
+
+</header>
+
+<div class="chat-body">
+
+<div
+id="messages"
+class="messages">
+
+<div class="welcome-card">
+
+<div class="welcome-icon">
+
+🚀
+
+</div>
+
+<h2>
+
+Welcome to ChitLAN
+
+</h2>
+
+<p>
+
+Your secure peer-to-peer workspace is ready.
+
+Invite your teammates using your Peer ID to start chatting,
+sharing files, voice calling and screen sharing.
+
+</p>
+
+<div class="welcome-features">
+
+<div>
+
+💬 Chat
+
+</div>
+
+<div>
+
+🎤 Voice
+
+</div>
+
+<div>
+
+🖥 Screen
+
+</div>
+
+<div>
+
+📁 Files
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+<div
+id="typing-indicator"
+class="typing-indicator">
+
+</div>
+
+</div>
+
+<footer class="chat-footer">
+
+<!-- Emoji Picker Popover -->
+<div id="emojiPicker" class="emoji-picker-popover" style="display:none;">
+  <div class="emoji-picker-header">
+    <input type="text" id="emojiSearchInput" placeholder="Search emojis..." autocomplete="off">
+  </div>
+  <div class="emoji-picker-categories" id="emojiCategories">
+    <button class="emoji-cat-btn active" data-cat="smileys">😀</button>
+    <button class="emoji-cat-btn" data-cat="gestures">👍</button>
+    <button class="emoji-cat-btn" data-cat="animals">🐶</button>
+    <button class="emoji-cat-btn" data-cat="food">🍔</button>
+    <button class="emoji-cat-btn" data-cat="objects">💡</button>
+    <button class="emoji-cat-btn" data-cat="symbols">❤️</button>
+  </div>
+  <div class="emoji-picker-grid" id="emojiGrid"></div>
+</div>
+
+<div class="composer">
+
+<button
+class="composer-btn"
+id="emojiBtn"
+title="Emoji">
+
+😊
+
+</button>
+
+<button
+class="composer-btn"
+id="attachmentBtn"
+title="Attach File">
+
+📎
+
+</button>
+
+<input
+id="msg-input"
+type="text"
+placeholder="Type a message..."
+
+autocomplete="off">
+
+<button
+class="composer-btn"
+id="gifBtn"
+title="GIF">
+
+GIF
+
+</button>
+
+<button
+id="send-btn"
+class="send-btn">
+
+Send
+
+</button>
+
+</div>
+
+</footer>
+
+</section>
+<aside class="right-panel">
+
+<div class="panel">
+
+<div class="panel-header">
+
+<h3>
+
+Voice & Video Meeting
+
+</h3>
+
+<div id="hostControls" class="host-controls" style="display:none;">
+  <button id="muteAllBtn" class="host-mini-btn" title="Mute All Participants">🔇 Mute All</button>
+  <button id="lockRoomBtn" class="host-mini-btn" title="Lock Room to New Joiners">🔒 Lock</button>
+</div>
+
+<span class="badge success">
+
+Live
+
+</span>
+
+</div>
+
+<div class="voice-card">
+
+<div class="voice-status">
+
+<div class="pulse"></div>
+
+<span id="voiceStatus">
+
+Disconnected
+
+</span>
+
+</div>
+
+<div class="voice-controls">
+
+<button
+id="joinBtn"
+class="panel-btn primary">
+
+Voice
+
+</button>
+
+<button
+id="camBtn"
+class="panel-btn primary">
+
+📷 Video
+
+</button>
+
+<button
+id="muteBtn"
+class="panel-btn">
+
+Mute
+
+</button>
+
+<button
+id="leaveBtn"
+class="panel-btn danger">
+
+Leave
+
+</button>
+
+</div>
+
+<div id="videoMeetingGrid" class="video-grid" style="display:none;"></div>
+
+<div
+id="voice-users"
+class="voice-users">
+
+<div class="empty-state">
+
+No participants
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+<div class="panel">
+
+<div class="panel-header">
+
+<h3>
+
+File Sharing
+
+</h3>
+
+</div>
+
+<div class="file-card">
+
+<input
+type="file"
+id="fileInput"
+hidden>
+
+<button
+id="selectFileBtn"
+class="panel-btn primary">
+
+Choose File
+
+</button>
+
+<div
+id="selectedFile"
+class="selected-file">
+
+No file selected
+
+</div>
+
+<button
+id="sendFileBtn"
+class="panel-btn">
+
+Send File
+
+</button>
+
+<div
+id="transferProgress"
+class="progress-card">
+
+<div class="progress-bar">
+
+<div
+id="progressFill"
+class="progress-fill">
+
+</div>
+
+</div>
+
+<div class="progress-info">
+
+<span id="progressPercent">
+
+0%
+
+</span>
+
+<span id="transferSpeed">
+
+0 KB/s
+
+</span>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+<div class="panel">
+
+<div class="panel-header">
+
+<h3>
+
+Screen Sharing
+
+</h3>
+
+</div>
+
+<div class="screen-card">
+
+<div id="screenTitleLabel" class="screen-title-label" style="display:none;">
+  <span class="pulse-dot"></span>
+  <span id="screenSharerNameText">Sharavani is sharing screen</span>
+</div>
+
+<video
+id="screenViewer"
+autoplay
+playsinline>
+
+</video>
+
+<div
+id="screenPlaceholder"
+class="screen-placeholder">
+
+🖥
+
+<p>
+
+No active screen
+
+</p>
+
+</div>
+
+<div class="screen-actions">
+
+<button
+id="shareScreenBtn"
+class="panel-btn primary">
+
+Share Screen
+
+</button>
+
+<button
+id="stopScreenBtn"
+class="panel-btn danger">
+
+Stop
+
+</button>
+
+</div>
+
+</div>
+
+</div>
+
+<div class="panel">
+
+<div class="panel-header">
+
+<h3>
+
+Statistics
+
+</h3>
+
+</div>
+
+<div class="stats">
+
+<div class="stat">
+
+<h2 id="statUsers">
+
+1
+
+</h2>
+
+<p>
+
+Users
+
+</p>
+
+</div>
+
+<div class="stat">
+
+<h2 id="statFiles">
+
+0
+
+</h2>
+
+<p>
+
+Files
+
+</p>
+
+</div>
+
+<div class="stat">
+
+<h2 id="statMessages">
+
+0
+
+</h2>
+
+<p>
+
+Messages
+
+</p>
+
+</div>
+
+<div class="stat">
+
+<h2 id="statDuration">
+
+00:00
+
+</h2>
+
+<p>
+
+Session
+
+</p>
+
+</div>
+
+</div>
+
+</div>
+
+<div class="panel">
+
+<div class="panel-header">
+
+<h3>
+
+Connection Health
+
+</h3>
+
+</div>
+
+<div class="health">
+
+<div class="health-item">
+
+<span>
+
+Latency
+
+</span>
+
+<strong id="latency">
+
+--
+
+</strong>
+
+</div>
+
+<div class="health-item">
+
+<span>
+
+Download
+
+</span>
+
+<strong id="downloadSpeed">
+
+--
+
+</strong>
+
+</div>
+
+<div class="health-item">
+
+<span>
+
+Upload
+
+</span>
+
+<strong id="uploadSpeed">
+
+--
+
+</strong>
+
+</div>
+
+<div class="health-item">
+
+<span>
+
+Connection
+
+</span>
+
+<strong id="connectionQuality">
+
+Excellent
+
+</strong>
+
+</div>
+
+</div>
+
+</div>
+
+</aside>
+
+<div id="screenModal" class="screen-modal" style="display:none;">
+<div class="screen-modal-overlay" id="screenModalOverlay"></div>
+<div class="screen-modal-content">
+<div class="screen-modal-header">
+<div class="screen-modal-title">
+<span>🖥 Screen Sharing Theater</span>
+<span id="screenSharerBadge" class="badge">Live Stream</span>
+</div>
+<div class="screen-modal-actions">
+<button id="modalFullscreenBtn" class="icon-btn" title="Fullscreen">⛶</button>
+<button id="closeScreenModalBtn" class="icon-btn" title="Close Viewer">✕</button>
+</div>
+</div>
+<div class="screen-modal-body">
+<video id="screenViewerModal" autoplay playsinline></video>
+</div>
+</div>
+</div>
+
+<!-- GIF Selector Modal -->
+<div id="gifModal" class="gif-modal" style="display:none;">
+  <div class="gif-modal-overlay" id="gifModalOverlay"></div>
+  <div class="gif-modal-content">
+    <div class="gif-modal-header">
+      <div class="gif-modal-title">
+        <span>🎬 Select a GIF</span>
+      </div>
+      <button id="closeGifModalBtn" class="icon-btn" title="Close">✕</button>
+    </div>
+    <div class="gif-modal-search">
+      <input type="text" id="gifSearchInput" placeholder="Search GIFs (e.g. happy, dance, cat)..." autocomplete="off">
+    </div>
+    <div class="gif-modal-categories" id="gifCategories">
+      <button class="gif-cat-chip active" data-query="trending">🔥 Trending</button>
+      <button class="gif-cat-chip" data-query="funny">😂 Funny</button>
+      <button class="gif-cat-chip" data-query="reaction">👏 Reaction</button>
+      <button class="gif-cat-chip" data-query="love">💖 Love</button>
+      <button class="gif-cat-chip" data-query="party">🎉 Party</button>
+      <button class="gif-cat-chip" data-query="anime">🍿 Anime</button>
+      <button class="gif-cat-chip" data-query="gaming">🎮 Gaming</button>
+    </div>
+    <div class="gif-modal-grid" id="gifGrid">
+      <div class="gif-loading">Loading GIFs...</div>
+    </div>
+  </div>
+</div>
+
+<div id="toastContainer"></div>
+
+<script type="module" src="js/app.js"></script>
+<audio id="notificationSound" preload="auto"></audio>
+</body>
+</html>

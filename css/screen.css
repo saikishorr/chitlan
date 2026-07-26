@@ -1,0 +1,148 @@
+/* Screen Share Card & Theater View Modal */
+.screen-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.screen-title-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: rgba(124, 92, 255, 0.15);
+  border: 1px solid rgba(124, 92, 255, 0.3);
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #c4b5fd;
+}
+
+.pulse-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #34d399;
+  box-shadow: 0 0 10px #34d399;
+  animation: pulse 1.5s infinite;
+}
+
+#screenViewer {
+  width: 100%;
+  max-height: 240px;
+  border-radius: 14px;
+  background: #000;
+  object-fit: contain;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+}
+
+.screen-placeholder {
+  height: 140px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border: 2px dashed var(--border);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--muted);
+  font-size: 28px;
+}
+
+.screen-placeholder p {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.screen-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.screen-actions button {
+  flex: 1;
+}
+
+/* Screen Share Dedicated Modal Overlay */
+.screen-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.screen-modal-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(4, 7, 15, 0.85);
+  backdrop-filter: blur(16px);
+}
+
+.screen-modal-content {
+  position: relative;
+  z-index: 2;
+  width: min(1200px, 95vw);
+  height: min(800px, 88vh);
+  display: flex;
+  flex-direction: column;
+  background: #0d1326;
+  border: 1px solid rgba(124, 92, 255, 0.3);
+  border-radius: 24px;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
+  overflow: hidden;
+  animation: modalZoom 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.screen-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  background: rgba(255, 255, 255, 0.03);
+  border-bottom: 1px solid var(--border);
+}
+
+.screen-modal-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.screen-modal-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.screen-modal-body {
+  flex: 1;
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+#screenViewerModal {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+@keyframes modalZoom {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}

@@ -1,0 +1,61 @@
+# 🚀 ChitLAN v3.0.0 Release Notes
+
+**Release Date:** July 27, 2026  
+**Version:** `v3.0.0` – *Ultimate Peer-to-Peer Real-Time Workspace & Video Collaboration Edition*
+
+---
+
+## 🌟 What's New in Version 3.0.0
+
+ChitLAN v3.0.0 is a massive major release introducing **Camera Video Meetings**, **Screen Share Conflict Takeover**, **Smart Room Auto-Redirection**, **Host Control Suite**, **WhatsApp-Style Keyword Emoji Search**, and **Searchable Animated GIF Broadcasting**—all built 100% Peer-to-Peer over WebRTC without servers or cloud dependencies!
+
+---
+
+### 📹 1. Camera Video Meetings Setup
+- **Integrated Video Calls**: Launch live camera video meetings right from the workspace header (`📹`) or meeting panel (`📷 Video`).
+- **Participant Video Tiles Grid**: Renders live video streams in an interactive video tile grid with participant name badges (`.video-tile-badge`).
+- **On-the-Fly Controls**: Toggle camera on/off (`📷 Cam On / Cam Off`), mute microphone (`🎤 Mute`), and leave call cleanly with zero memory leaks.
+
+### 🖥️ 2. Screen Share Takeover Conflict Prompt & Sharer Title Badges
+- **Takeover Conflict Resolution**: When a user starts screen sharing while another participant is actively sharing, an interactive confirmation dialog prompts: `"[Name] is currently sharing their screen. Starting your screen share will stop their stream. Do you want to continue?"`
+- **Active Sharer Title Badges**:
+  - Sidebar Panel: `🖥️ [Name] is sharing screen` with a glowing live status indicator.
+  - Theater Modal Header: `Sharer: [Name] (Host/Peer)`.
+
+### 🔀 3. Smart Room Auto-Redirection & P2P Mesh Architecture
+- **Nested Join Redirection**: If a third person attempts to join a non-host peer's local ID (instead of the main Host room ID), the peer's client detects the main room connection and transmits a `{ type: 'room-redirect' }` handshake.
+- **Automated Reconnection**: The incoming user receives a toast notification `🔀 Redirecting to main workspace room...` and automatically connects to the main Host room cleanly.
+- **10-Member Capacity Limit Enforcement**: Host rooms strictly enforce a 10-member maximum cap. Excess join requests or redirections to full rooms receive a friendly `⚠️ Room Full (10/10)` notice.
+
+### 👑 4. Host Management Control Suite
+- **Remove / Kick Participant (`❌ Kick`)**: Exclusive to the Host, a `❌ Kick` button renders beside each user in the Online Users list. Host can cleanly remove any unwanted participant from the meeting.
+- **Mute All (`🔇 Mute All`)**: Host can mute all room microphones simultaneously during presentations.
+- **Lock Room (`🔒 Lock / Unlock`)**: Host can lock the workspace room to prevent new joiners from entering.
+
+### 😀 5. WhatsApp / Snapchat Style Keyword Emoji Picker Engine
+- **Keyword Search Engine**: Maps search queries (e.g. `smile`, `happy`, `love`, `heart`, `thumb`, `fire`, `star`, `dog`, `cat`, `food`, `pizza`, `coffee`, `party`, `rocket`, `100`, etc.) to emojis in real-time.
+- **Direct Cursor Insertion**: Click any emoji to insert it directly at the cursor position in `#msg-input`.
+
+### 🎬 6. Searchable Animated GIF Lightbox & P2P GIF Transmission
+- **Rich GIF Catalog**: Curated catalog covering Trending, Memes, Reactions, Mindblown, Party, Anime, Gaming, and Animals.
+- **Live Search**: Type terms like `dance`, `laugh`, `wow`, `cat`, `movie`, `party`, `anime`, `game`, `clap`, `win` to filter GIFs instantly.
+- **P2P Transmission**: Click any GIF to broadcast it directly as an image message across WebRTC data channels.
+
+### 🎨 7. Choose Color Selection Dropdown Contrast Fix
+- Explicit styling applied to `<select id="color">` options ensuring dark background (`#0d1326`) and crisp white text (`#ffffff`) across all desktop and mobile browsers.
+
+### 📁 8. Monotonic File Transfer Progress & Speed Display
+- Re-architected chunk ACK tracking so progress bars smoothly advance from **0% to 100%** without looping back to 0%.
+- Displays real-time throughput transfer speed on both sender and receiver panels (e.g. `6.26 MB/s`).
+
+---
+
+## 🛠️ Architecture & ES Module Refactoring
+- **Modular ES Architecture**: Refactored into 9 clean ES modules (`constants.js`, `state.js`, `utils.js`, `ui.js`, `voice.js`, `files.js`, `screen.js`, `peer.js`, `app.js`).
+- **Comprehensive Smoke Tests**: Verified with 0 syntax errors (`node --check`) and 0 runtime errors across all WebRTC workflows.
+
+---
+
+## 📄 License & GitHub Pages
+Licensed under the [MIT License](LICENSE).  
+Deployed live on [GitHub Pages](https://saikishorr.github.io/chitlan/).

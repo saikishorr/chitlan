@@ -1,0 +1,1883 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>ChitLAN — Real-Time Collaboration Without the Cloud</title>
+
+<meta
+ name="description"
+ content="ChitLAN is a peer-to-peer collaboration platform for local networks. Chat, talk, share screens, and transfer files directly between connected devices."
+/>
+
+  <meta name="author" content="Saikishor Rasala" />
+  <meta name="robots" content="index, follow" />
+  <meta name="theme-color" content="#080b14" />
+
+  <link rel="canonical" href="https://saikishorr.github.io/chitlan/" />
+
+  <!-- Open Graph -->
+
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="ChitLAN — Real-Time Collaboration Without the Cloud" />
+  <meta
+    property="og:description"
+    content="Chat, talk, share your screen, and transfer files directly between devices using peer-to-peer WebRTC communication."
+  />
+  <meta property="og:url" content="https://saikishorr.github.io/chitlan/" />
+  <meta property="og:image" content="https://saikishorr.github.io/chitlan/og-image2.3mb.png" />
+  <meta property="og:image:alt" content="ChitLAN real-time collaboration platform" />
+
+  <!-- Twitter -->
+
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="ChitLAN — Real-Time Collaboration Without the Cloud" />
+  <meta
+    name="twitter:description"
+    content="A browser-based peer-to-peer collaboration platform for chat, voice, screen sharing, and file transfers."
+  />
+  <meta name="twitter:image" content="https://saikishorr.github.io/chitlan/og-image2.3mb.png" />
+
+  <!-- Structured Data -->
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "ChitLAN",
+    "applicationCategory": "CommunicationApplication",
+    "operatingSystem": "Web Browser",
+    "softwareVersion": "3.0.0",
+    "description": "A peer-to-peer real-time collaboration platform for local networks with chat, camera video meetings, screen sharing, and file transfers.",
+    "url": "https://saikishorr.github.io/chitlan/",
+    "author": {
+      "@type": "Person",
+      "name": "Saikishor Rasala"
+    },
+    "license": "https://opensource.org/licenses/MIT"
+  }
+  </script>
+
+  <style>
+    :root {
+      --bg: #080b14;
+      --bg-soft: #0d1220;
+      --surface: rgba(255, 255, 255, 0.055);
+      --surface-strong: rgba(255, 255, 255, 0.09);
+      --border: rgba(255, 255, 255, 0.1);
+
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --muted-light: #cbd5e1;
+
+      --primary: #7c5cff;
+      --primary-light: #a78bfa;
+      --cyan: #22d3ee;
+      --green: #34d399;
+
+      --max-width: 1180px;
+      --radius-lg: 28px;
+      --radius-md: 18px;
+
+      --shadow-lg:
+        0 30px 80px rgba(0, 0, 0, 0.35);
+
+      --ease: cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      min-height: 100vh;
+      overflow-x: hidden;
+      background:
+        radial-gradient(
+          circle at 50% -20%,
+          rgba(124, 92, 255, 0.2),
+          transparent 38%
+        ),
+        var(--bg);
+      color: var(--text);
+      font-family:
+        Inter,
+        ui-sans-serif,
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    button,
+    a {
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .container {
+      width: min(var(--max-width), calc(100% - 40px));
+      margin-inline: auto;
+    }
+
+    /* =========================
+       Background
+    ========================== */
+
+    .background-grid {
+      position: fixed;
+      inset: 0;
+      z-index: -3;
+      pointer-events: none;
+      opacity: 0.35;
+      background-image:
+        linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+      background-size: 64px 64px;
+      mask-image: linear-gradient(to bottom, black, transparent 85%);
+    }
+
+    .ambient-light {
+      position: fixed;
+      width: 420px;
+      height: 420px;
+      border-radius: 50%;
+      filter: blur(100px);
+      opacity: 0.12;
+      pointer-events: none;
+      z-index: -2;
+    }
+
+    .ambient-one {
+      top: 10%;
+      left: -180px;
+      background: var(--primary);
+      animation: driftOne 14s ease-in-out infinite alternate;
+    }
+
+    .ambient-two {
+      top: 45%;
+      right: -180px;
+      background: var(--cyan);
+      animation: driftTwo 16s ease-in-out infinite alternate;
+    }
+
+    @keyframes driftOne {
+      from {
+        transform: translate(0, 0);
+      }
+      to {
+        transform: translate(100px, 80px);
+      }
+    }
+
+    @keyframes driftTwo {
+      from {
+        transform: translate(0, 0);
+      }
+      to {
+        transform: translate(-100px, -60px);
+      }
+    }
+
+    /* =========================
+       Navigation
+    ========================== */
+
+    .navbar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      z-index: 100;
+      border-bottom: 1px solid transparent;
+      transition:
+        background 0.3s ease,
+        border-color 0.3s ease,
+        backdrop-filter 0.3s ease;
+    }
+
+    .navbar.scrolled {
+      background: rgba(8, 11, 20, 0.75);
+      border-color: var(--border);
+      backdrop-filter: blur(20px);
+    }
+
+    .nav-inner {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 1.2rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+    }
+
+    .brand-mark {
+      width: 36px;
+      height: 36px;
+      display: grid;
+      place-items: center;
+      border-radius: 11px;
+      background:
+        linear-gradient(135deg, var(--primary), var(--cyan));
+      box-shadow:
+        0 0 30px rgba(124, 92, 255, 0.35);
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 28px;
+      color: var(--muted-light);
+      font-size: 0.92rem;
+    }
+
+    .nav-links a {
+      transition: color 0.25s ease;
+    }
+
+    .nav-links a:hover {
+      color: white;
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .nav-github {
+      color: var(--muted-light);
+      font-size: 0.9rem;
+    }
+
+    /* =========================
+       Buttons
+    ========================== */
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 9px;
+      min-height: 48px;
+      padding: 0 20px;
+      border: 1px solid transparent;
+      border-radius: 12px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition:
+        transform 0.25s var(--ease),
+        box-shadow 0.25s ease,
+        border-color 0.25s ease,
+        background 0.25s ease;
+    }
+
+    .btn:hover {
+      transform: translateY(-3px);
+    }
+
+    .btn-primary {
+      color: white;
+      background:
+        linear-gradient(135deg, var(--primary), #5b4bd8);
+      box-shadow:
+        0 12px 30px rgba(124, 92, 255, 0.25);
+    }
+
+    .btn-primary:hover {
+      box-shadow:
+        0 18px 40px rgba(124, 92, 255, 0.4);
+    }
+
+    .btn-secondary {
+      color: var(--text);
+      border-color: var(--border);
+      background: var(--surface);
+    }
+
+    .btn-secondary:hover {
+      background: var(--surface-strong);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .btn-small {
+      min-height: 40px;
+      padding-inline: 16px;
+      font-size: 0.85rem;
+    }
+
+    /* =========================
+       Hero
+    ========================== */
+
+    .hero {
+      position: relative;
+      min-height: 920px;
+      display: flex;
+      align-items: center;
+      padding: 150px 0 100px;
+      overflow: hidden;
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 2;
+      max-width: 820px;
+      margin-inline: auto;
+      text-align: center;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 13px;
+      margin-bottom: 26px;
+      border: 1px solid rgba(124, 92, 255, 0.35);
+      border-radius: 999px;
+      background: rgba(124, 92, 255, 0.1);
+      color: var(--primary-light);
+      font-size: 0.82rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 12px var(--green);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%,
+      100% {
+        opacity: 1;
+        transform: scale(1);
+      }
+
+      50% {
+        opacity: 0.55;
+        transform: scale(0.75);
+      }
+    }
+
+    .hero h1 {
+      max-width: 850px;
+      margin-inline: auto;
+      font-size: clamp(3.2rem, 8vw, 6.8rem);
+      line-height: 0.98;
+      letter-spacing: -0.075em;
+      font-weight: 850;
+    }
+
+    .gradient-text {
+      background:
+        linear-gradient(
+          110deg,
+          #ffffff 10%,
+          #c4b5fd 45%,
+          #67e8f9 90%
+        );
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+
+    .hero-description {
+      max-width: 680px;
+      margin: 28px auto 0;
+      color: var(--muted);
+      font-size: clamp(1.05rem, 2vw, 1.25rem);
+    }
+
+    .hero-actions {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 14px;
+      margin-top: 34px;
+    }
+
+    .hero-note {
+      margin-top: 20px;
+      color: #64748b;
+      font-size: 0.82rem;
+    }
+
+    /* =========================
+       Network Visualization
+    ========================== */
+
+    .network-visual {
+      position: relative;
+      width: min(760px, 100%);
+      height: 320px;
+      margin: 80px auto 0;
+    }
+
+    .network-line {
+      position: absolute;
+      height: 1px;
+      transform-origin: left center;
+      background:
+        linear-gradient(
+          90deg,
+          transparent,
+          rgba(124, 92, 255, 0.7),
+          rgba(34, 211, 238, 0.7),
+          transparent
+        );
+      opacity: 0.7;
+    }
+
+    .line-one {
+      width: 270px;
+      top: 50%;
+      left: 13%;
+      transform: rotate(-18deg);
+    }
+
+    .line-two {
+      width: 270px;
+      top: 50%;
+      right: 13%;
+      transform: rotate(18deg);
+    }
+
+    .line-three {
+      width: 300px;
+      top: 50%;
+      left: 30%;
+      transform: rotate(90deg);
+    }
+
+    .network-node {
+      position: absolute;
+      display: grid;
+      place-items: center;
+      width: 74px;
+      height: 74px;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 22px;
+      background:
+        linear-gradient(
+          145deg,
+          rgba(255, 255, 255, 0.12),
+          rgba(255, 255, 255, 0.035)
+        );
+      box-shadow:
+        0 15px 45px rgba(0, 0, 0, 0.3),
+        0 0 35px rgba(124, 92, 255, 0.15);
+      backdrop-filter: blur(16px);
+      font-size: 1.7rem;
+      animation: floatNode 5s ease-in-out infinite;
+    }
+
+    .node-main {
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 100px;
+      height: 100px;
+      border-radius: 30px;
+      background:
+        linear-gradient(
+          135deg,
+          rgba(124, 92, 255, 0.35),
+          rgba(34, 211, 238, 0.18)
+        );
+      border-color: rgba(167, 139, 250, 0.55);
+      box-shadow:
+        0 0 70px rgba(124, 92, 255, 0.25);
+      animation-delay: -1s;
+    }
+
+    .node-one {
+      top: 16%;
+      left: 8%;
+    }
+
+    .node-two {
+      top: 16%;
+      right: 8%;
+      animation-delay: -2s;
+    }
+
+    .node-three {
+      bottom: 5%;
+      left: 20%;
+      animation-delay: -3s;
+    }
+
+    .node-four {
+      bottom: 5%;
+      right: 20%;
+      animation-delay: -4s;
+    }
+
+    @keyframes floatNode {
+      0%,
+      100% {
+        transform: translateY(0);
+      }
+
+      50% {
+        transform: translateY(-12px);
+      }
+    }
+
+    .data-packet {
+      position: absolute;
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--cyan);
+      box-shadow: 0 0 15px var(--cyan);
+      animation: packetMove 3.5s linear infinite;
+    }
+
+    .packet-one {
+      top: 45%;
+      left: 23%;
+    }
+
+    .packet-two {
+      top: 45%;
+      right: 23%;
+      animation-delay: 1.2s;
+    }
+
+    @keyframes packetMove {
+      0% {
+        opacity: 0;
+        transform: translateX(0) scale(0.5);
+      }
+
+      20% {
+        opacity: 1;
+      }
+
+      80% {
+        opacity: 1;
+      }
+
+      100% {
+        opacity: 0;
+        transform: translateX(130px) scale(1);
+      }
+    }
+
+    /* =========================
+       Stats
+    ========================== */
+
+    .stats {
+      position: relative;
+      z-index: 3;
+      margin-top: -55px;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      background: var(--border);
+      box-shadow: var(--shadow-lg);
+    }
+
+    .stat {
+      padding: 28px 20px;
+      text-align: center;
+      background: rgba(13, 18, 32, 0.85);
+    }
+
+    .stat-value {
+      font-size: 2rem;
+      font-weight: 800;
+      letter-spacing: -0.04em;
+    }
+
+    .stat-label {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+
+    /* =========================
+       Sections
+    ========================== */
+
+    section:not(.hero) {
+      padding: 120px 0;
+    }
+
+    .section-heading {
+      max-width: 680px;
+      margin: 0 auto 55px;
+      text-align: center;
+    }
+
+    .section-kicker {
+      margin-bottom: 12px;
+      color: var(--primary-light);
+      font-size: 0.78rem;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .section-heading h2 {
+      font-size: clamp(2.2rem, 5vw, 4rem);
+      line-height: 1.05;
+      letter-spacing: -0.055em;
+    }
+
+    .section-heading p {
+      margin-top: 18px;
+      color: var(--muted);
+      font-size: 1.05rem;
+    }
+
+    /* =========================
+       Feature Cards
+    ========================== */
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+    }
+
+    .feature-card {
+      position: relative;
+      min-height: 250px;
+      padding: 28px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      background:
+        linear-gradient(
+          145deg,
+          rgba(255, 255, 255, 0.075),
+          rgba(255, 255, 255, 0.025)
+        );
+      transition:
+        transform 0.35s var(--ease),
+        border-color 0.35s ease,
+        background 0.35s ease;
+    }
+
+    .feature-card::before {
+      content: "";
+      position: absolute;
+      inset: -100px;
+      background:
+        radial-gradient(
+          circle,
+          rgba(124, 92, 255, 0.2),
+          transparent 65%
+        );
+      opacity: 0;
+      transition: opacity 0.35s ease;
+    }
+
+    .feature-card:hover {
+      transform: translateY(-8px);
+      border-color: rgba(167, 139, 250, 0.4);
+      background:
+        linear-gradient(
+          145deg,
+          rgba(255, 255, 255, 0.1),
+          rgba(255, 255, 255, 0.04)
+        );
+    }
+
+    .feature-card:hover::before {
+      opacity: 1;
+    }
+
+    .feature-icon,
+    .feature-card h3,
+    .feature-card p {
+      position: relative;
+      z-index: 1;
+    }
+
+    .feature-icon {
+      width: 48px;
+      height: 48px;
+      display: grid;
+      place-items: center;
+      margin-bottom: 25px;
+      border: 1px solid rgba(167, 139, 250, 0.25);
+      border-radius: 14px;
+      background: rgba(124, 92, 255, 0.12);
+      font-size: 1.35rem;
+    }
+
+    .feature-card h3 {
+      margin-bottom: 10px;
+      font-size: 1.05rem;
+    }
+
+    .feature-card p {
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    /* =========================
+       Product Preview
+    ========================== */
+
+    .preview-section {
+      position: relative;
+    }
+
+    .preview-wrapper {
+      position: relative;
+      padding: 10px;
+      border: 1px solid var(--border);
+      border-radius: 30px;
+      background:
+        linear-gradient(
+          135deg,
+          rgba(124, 92, 255, 0.2),
+          rgba(34, 211, 238, 0.08),
+          rgba(255, 255, 255, 0.04)
+        );
+      box-shadow:
+        0 35px 100px rgba(0, 0, 0, 0.35);
+    }
+
+    .app-window {
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 22px;
+      background: #0b0f1a;
+    }
+
+    .window-header {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      height: 48px;
+      padding: 0 18px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .window-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.25);
+    }
+
+    .window-title {
+      margin-left: 10px;
+      color: var(--muted);
+      font-size: 0.75rem;
+    }
+
+    .app-layout {
+      display: grid;
+      grid-template-columns: 220px 1fr;
+      min-height: 430px;
+    }
+
+    .app-sidebar {
+      padding: 20px;
+      border-right: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.025);
+    }
+
+    .sidebar-title {
+      margin-bottom: 20px;
+      color: var(--muted);
+      font-size: 0.7rem;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .fake-user {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px;
+      margin-bottom: 7px;
+      border-radius: 10px;
+      color: var(--muted-light);
+      font-size: 0.8rem;
+    }
+
+    .fake-user.active {
+      background: rgba(124, 92, 255, 0.15);
+      color: white;
+    }
+
+    .fake-avatar {
+      width: 28px;
+      height: 28px;
+      display: grid;
+      place-items: center;
+      border-radius: 9px;
+      background:
+        linear-gradient(135deg, var(--primary), var(--cyan));
+      font-size: 0.7rem;
+    }
+
+    .app-chat {
+      display: flex;
+      flex-direction: column;
+      padding: 24px;
+    }
+
+    .chat-header {
+      padding-bottom: 18px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .chat-header h3 {
+      font-size: 1rem;
+    }
+
+    .chat-header p {
+      color: var(--muted);
+      font-size: 0.75rem;
+    }
+
+    .fake-messages {
+      display: flex;
+      flex: 1;
+      flex-direction: column;
+      justify-content: flex-end;
+      gap: 14px;
+      padding: 22px 0;
+    }
+
+    .fake-message {
+      max-width: 65%;
+      padding: 12px 15px;
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.07);
+      color: var(--muted-light);
+      font-size: 0.8rem;
+    }
+
+    .fake-message.self {
+      align-self: flex-end;
+      background:
+        linear-gradient(
+          135deg,
+          rgba(124, 92, 255, 0.65),
+          rgba(91, 75, 216, 0.65)
+        );
+      color: white;
+    }
+
+    .fake-input {
+      height: 45px;
+      padding: 0 15px;
+      display: flex;
+      align-items: center;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      color: #64748b;
+      font-size: 0.8rem;
+    }
+
+    /* =========================
+       Workflow
+    ========================== */
+
+    .workflow-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+    }
+
+    .workflow-card {
+      padding: 30px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      background: var(--surface);
+    }
+
+    .workflow-number {
+      display: inline-grid;
+      place-items: center;
+      width: 38px;
+      height: 38px;
+      margin-bottom: 24px;
+      border-radius: 12px;
+      background: rgba(124, 92, 255, 0.15);
+      color: var(--primary-light);
+      font-weight: 800;
+    }
+
+    .workflow-card h3 {
+      margin-bottom: 10px;
+    }
+
+    .workflow-card p {
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    /* =========================
+       Technology
+    ========================== */
+
+    .technology {
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.015);
+    }
+
+    .tech-list {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 12px;
+    }
+
+    .tech-pill {
+      padding: 11px 17px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: var(--surface);
+      color: var(--muted-light);
+      font-size: 0.85rem;
+      transition:
+        transform 0.25s ease,
+        border-color 0.25s ease;
+    }
+
+    .tech-pill:hover {
+      transform: translateY(-3px);
+      border-color: rgba(167, 139, 250, 0.45);
+    }
+
+    /* =========================
+       CTA
+    ========================== */
+
+    .cta-card {
+      position: relative;
+      overflow: hidden;
+      padding: 80px 40px;
+      border: 1px solid rgba(167, 139, 250, 0.25);
+      border-radius: 32px;
+      background:
+        radial-gradient(
+          circle at 50% 0%,
+          rgba(124, 92, 255, 0.3),
+          transparent 60%
+        ),
+        linear-gradient(
+          145deg,
+          rgba(124, 92, 255, 0.15),
+          rgba(255, 255, 255, 0.035)
+        );
+      text-align: center;
+    }
+
+    .cta-card h2 {
+      max-width: 700px;
+      margin-inline: auto;
+      font-size: clamp(2.3rem, 5vw, 4.5rem);
+      line-height: 1.05;
+      letter-spacing: -0.06em;
+    }
+
+    .cta-card p {
+      max-width: 600px;
+      margin: 20px auto 0;
+      color: var(--muted);
+    }
+
+    .cta-actions {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 14px;
+      margin-top: 32px;
+    }
+
+    /* =========================
+       Footer
+    ========================== */
+
+    footer {
+      padding: 50px 0 35px;
+      border-top: 1px solid var(--border);
+    }
+
+    .footer-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+    }
+
+    .footer-brand {
+      color: var(--muted-light);
+      font-size: 0.9rem;
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 20px;
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+
+    .footer-links a:hover {
+      color: white;
+    }
+
+    .copyright {
+      margin-top: 30px;
+      color: #475569;
+      font-size: 0.78rem;
+      text-align: center;
+    }
+
+    /* =========================
+       Scroll Animations
+    ========================== */
+
+    .reveal {
+      opacity: 0;
+      transform: translateY(30px);
+      transition:
+        opacity 0.8s var(--ease),
+        transform 0.8s var(--ease);
+    }
+
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .delay-one {
+      transition-delay: 0.1s;
+    }
+
+    .delay-two {
+      transition-delay: 0.2s;
+    }
+
+    .delay-three {
+      transition-delay: 0.3s;
+    }
+
+    /* =========================
+       Responsive
+    ========================== */
+
+    @media (max-width: 950px) {
+      .features-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .app-layout {
+        grid-template-columns: 180px 1fr;
+      }
+    }
+
+    @media (max-width: 760px) {
+      .nav-links {
+        display: none;
+      }
+
+      .nav-github {
+        display: none;
+      }
+
+      .hero {
+        min-height: auto;
+        padding-top: 140px;
+      }
+
+      .network-visual {
+        height: 270px;
+        transform: scale(0.85);
+        margin-top: 45px;
+      }
+
+      .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .workflow-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .app-layout {
+        grid-template-columns: 1fr;
+      }
+
+      .app-sidebar {
+        display: none;
+      }
+
+      .app-chat {
+        min-height: 400px;
+      }
+
+      .footer-inner {
+        flex-direction: column;
+        text-align: center;
+      }
+    }
+
+    @media (max-width: 560px) {
+      .container {
+        width: min(100% - 28px, var(--max-width));
+      }
+
+      .hero {
+        padding-top: 125px;
+      }
+
+      .hero h1 {
+        font-size: clamp(3rem, 16vw, 5rem);
+      }
+
+      .hero-actions,
+      .cta-actions {
+        flex-direction: column;
+      }
+
+      .hero-actions .btn,
+      .cta-actions .btn {
+        width: 100%;
+      }
+
+      .features-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .stats-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .stat {
+        padding: 22px 12px;
+      }
+
+      .stat-value {
+        font-size: 1.6rem;
+      }
+
+      .network-visual {
+        transform: scale(0.7);
+        width: 140%;
+        margin-left: -20%;
+      }
+
+      .cta-card {
+        padding: 55px 22px;
+      }
+
+      section:not(.hero) {
+        padding: 85px 0;
+      }
+    }
+
+    /* =========================
+       Reduced Motion
+    ========================== */
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        scroll-behavior: auto !important;
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.001ms !important;
+      }
+
+      .reveal {
+        opacity: 1;
+        transform: none;
+      }
+    }
+  </style>
+
+</head>
+
+<body>
+
+  <div class="background-grid"></div>
+  <div class="ambient-light ambient-one"></div>
+  <div class="ambient-light ambient-two"></div>
+
+  <!-- Navigation -->
+
+  <header class="navbar" id="navbar">
+    <div class="container nav-inner">
+
+
+  <a href="#" class="brand" aria-label="ChitLAN home">
+    <span class="brand-mark">⚡</span>
+    <span>ChitLAN</span>
+  </a>
+
+  <nav class="nav-links" aria-label="Main navigation">
+    <a href="#features">Features</a>
+    <a href="#how-it-works">How it works</a>
+    <a href="#technology">Technology</a>
+  </nav>
+
+  <div class="nav-actions">
+    <a
+      class="nav-github"
+      href="https://github.com/saikishorr/chitlan"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      GitHub
+    </a>
+
+    <a
+      class="btn btn-primary btn-small"
+      href="app.html"
+    >
+      Launch App
+    </a>
+  </div>
+
+</div>
+ 
+
+  </header>
+
+  <main>
+
+ 
+<!-- Hero -->
+<section class="hero">
+
+  <div class="container">
+
+    <div class="hero-content">
+
+      <div class="eyebrow">
+        <span class="status-dot"></span>
+        ChitLAN v3.0 is live (Video Meetings & Workspace Mesh)
+      </div>
+
+      <h1>
+        Collaboration,
+        <span class="gradient-text">without the cloud.</span>
+      </h1>
+
+      <p class="hero-description">
+        Chat, talk, share your screen, and transfer files directly
+        between connected devices using peer-to-peer technology.
+        No accounts. No cloud storage. No unnecessary infrastructure.
+      </p>
+
+      <div class="hero-actions">
+
+        <a
+          class="btn btn-primary"
+          href="app.html"
+        >
+          🚀 Launch ChitLAN
+        </a>
+
+        <a
+          class="btn btn-secondary"
+          href="https://github.com/saikishorr/chitlan"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          ⭐ View on GitHub
+        </a>
+
+      </div>
+
+      <p class="hero-note">
+        Built for local networks • Powered by WebRTC • Open source
+      </p>
+
+    </div>
+
+    <!-- Network Visualization -->
+    <div
+      class="network-visual"
+      aria-label="Peer-to-peer network visualization"
+      role="img"
+    >
+
+      <div class="network-line line-one"></div>
+      <div class="network-line line-two"></div>
+      <div class="network-line line-three"></div>
+
+      <div class="data-packet packet-one"></div>
+      <div class="data-packet packet-two"></div>
+
+      <div class="network-node node-one">💻</div>
+      <div class="network-node node-two">🖥️</div>
+      <div class="network-node node-three">📱</div>
+      <div class="network-node node-four">💻</div>
+
+      <div class="network-node node-main">⚡</div>
+
+    </div>
+
+  </div>
+
+</section>
+
+<!-- Stats -->
+<section class="stats">
+  <div class="container">
+
+    <div class="stats-grid">
+
+      <div class="stat reveal">
+        <div class="stat-value" data-count="10">0</div>
+        <div class="stat-label">Users per room</div>
+      </div>
+
+      <div class="stat reveal delay-one">
+        <div class="stat-value">100 GB</div>
+        <div class="stat-label">Large file transfers</div>
+      </div>
+
+      <div class="stat reveal delay-two">
+        <div class="stat-value">P2P</div>
+        <div class="stat-label">Direct communication</div>
+      </div>
+
+      <div class="stat reveal delay-three">
+        <div class="stat-value">0</div>
+        <div class="stat-label">Cloud accounts required</div>
+      </div>
+
+    </div>
+
+  </div>
+</section>
+
+<!-- Features -->
+<section id="features">
+
+  <div class="container">
+
+    <div class="section-heading reveal">
+
+      <div class="section-kicker">
+        Everything you need
+      </div>
+
+      <h2>
+        One place for real-time collaboration.
+      </h2>
+
+      <p>
+        ChitLAN brings communication and collaboration tools together
+        in a lightweight browser-based experience.
+      </p>
+
+    </div>
+
+    <div class="features-grid">
+
+      <article class="feature-card reveal">
+        <div class="feature-icon">💬</div>
+        <h3>Real-Time Workspace Chat</h3>
+        <p>
+          Communicate instantly with group messaging, typing indicators,
+          timestamps, notifications, and persistent chat history.
+        </p>
+      </article>
+
+      <article class="feature-card reveal delay-one">
+        <div class="feature-icon">📹</div>
+        <h3>Camera Video Meetings</h3>
+        <p>
+          Join live multi-peer camera video meetings with participant grid
+          tiles, name badges, and camera/microphone controls.
+        </p>
+      </article>
+
+      <article class="feature-card reveal delay-two">
+        <div class="feature-icon">🖥️</div>
+        <h3>Screen Share Takeover</h3>
+        <p>
+          Share desktop or app windows with conflict takeover management
+          and active sharer title badges in sidebar & theater views.
+        </p>
+      </article>
+
+      <article class="feature-card reveal delay-three">
+        <div class="feature-icon">🔀</div>
+        <h3>Smart Auto-Redirection</h3>
+        <p>
+          Intelligent P2P redirection automatically connects joiners of non-host
+          peers to the main Host room with 10-member capacity limits.
+        </p>
+      </article>
+
+      <article class="feature-card reveal">
+        <div class="feature-icon">👑</div>
+        <h3>Host Control Suite</h3>
+        <p>
+          Exclusive Host controls to kick/remove unwanted participants, mute all
+          microphones, and lock workspace rooms.
+        </p>
+      </article>
+
+      <article class="feature-card reveal delay-one">
+        <div class="feature-icon">😀</div>
+        <h3>Emoji & GIF Search Engine</h3>
+        <p>
+          WhatsApp-style keyword emoji picker with cursor insertion and
+          searchable GIF lightbox modal for P2P image broadcasting.
+        </p>
+      </article>
+
+      <article class="feature-card reveal delay-two">
+        <div class="feature-icon">📁</div>
+        <h3>Advanced File Sharing</h3>
+        <p>
+          Transfer files up to 100 GB with monotonic 0–100% progress
+          bars, live throughput speed indicators (MB/s), and previews.
+        </p>
+      </article>
+
+      <article class="feature-card reveal delay-three">
+        <div class="feature-icon">🌙</div>
+        <h3>Modern Glassmorphism</h3>
+        <p>
+          Responsive dark mode, high-contrast color tokens, PWA support,
+          and a sleek UI designed for seamless P2P collaboration.
+        </p>
+      </article>
+
+    </div>
+
+  </div>
+
+</section>
+
+<!-- Product Preview -->
+<section class="preview-section">
+
+  <div class="container">
+
+    <div class="section-heading reveal">
+
+      <div class="section-kicker">
+        Built for collaboration
+      </div>
+
+      <h2>
+        Simple on the surface.
+        Powerful underneath.
+      </h2>
+
+      <p>
+        A focused interface for communication, file sharing, and
+        real-time collaboration between connected devices.
+      </p>
+
+    </div>
+
+    <div class="preview-wrapper reveal">
+
+      <div class="app-window">
+
+        <div class="window-header">
+          <span class="window-dot"></span>
+          <span class="window-dot"></span>
+          <span class="window-dot"></span>
+          <span class="window-title">
+            ChitLAN — Real-Time Collaboration
+          </span>
+        </div>
+
+        <div class="app-layout">
+
+          <aside class="app-sidebar">
+
+            <div class="sidebar-title">
+              Connected Users
+            </div>
+
+            <div class="fake-user active">
+              <span class="fake-avatar">S</span>
+              <span>Saikishor</span>
+            </div>
+
+            <div class="fake-user">
+              <span class="fake-avatar">A</span>
+              <span>Alex</span>
+            </div>
+
+            <div class="fake-user">
+              <span class="fake-avatar">J</span>
+              <span>Jordan</span>
+            </div>
+
+            <div class="fake-user">
+              <span class="fake-avatar">M</span>
+              <span>Maria</span>
+            </div>
+
+          </aside>
+
+          <div class="app-chat">
+
+            <div class="chat-header">
+              <h3>General</h3>
+              <p>3 connected peers</p>
+            </div>
+
+            <div class="fake-messages">
+
+              <div class="fake-message">
+                Hey! Can you send me the project files?
+              </div>
+
+              <div class="fake-message self">
+                Sure. Sending them directly now.
+              </div>
+
+              <div class="fake-message">
+                Perfect. Transfer received ⚡
+              </div>
+
+            </div>
+
+            <div class="fake-input">
+              Type a message...
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</section>
+
+<!-- How It Works -->
+<section id="how-it-works">
+
+  <div class="container">
+
+    <div class="section-heading reveal">
+
+      <div class="section-kicker">
+        How it works
+      </div>
+
+      <h2>
+        Connect. Collaborate. Share.
+      </h2>
+
+      <p>
+        Get started in seconds without creating an account or managing
+        complicated infrastructure.
+      </p>
+
+    </div>
+
+    <div class="workflow-grid">
+
+      <article class="workflow-card reveal">
+        <div class="workflow-number">01</div>
+        <h3>Open ChitLAN</h3>
+        <p>
+          Launch the application in your browser and create or join a
+          collaboration room.
+        </p>
+      </article>
+
+      <article class="workflow-card reveal delay-one">
+        <div class="workflow-number">02</div>
+        <h3>Connect your peers</h3>
+        <p>
+          Share the room connection details with the people you want
+          to collaborate with.
+        </p>
+      </article>
+
+      <article class="workflow-card reveal delay-two">
+        <div class="workflow-number">03</div>
+        <h3>Start collaborating</h3>
+        <p>
+          Chat, talk, share screens, and transfer files directly between
+          connected devices.
+        </p>
+      </article>
+
+    </div>
+
+  </div>
+
+</section>
+
+<!-- Technology -->
+<section
+  class="technology"
+  id="technology"
+>
+
+  <div class="container">
+
+    <div class="section-heading reveal">
+
+      <div class="section-kicker">
+        Under the hood
+      </div>
+
+      <h2>
+        Built on open web technologies.
+      </h2>
+
+      <p>
+        ChitLAN uses modern browser capabilities to create a lightweight
+        real-time collaboration experience.
+      </p>
+
+    </div>
+
+    <div class="tech-list reveal">
+
+      <span class="tech-pill">HTML5</span>
+      <span class="tech-pill">CSS3</span>
+      <span class="tech-pill">JavaScript</span>
+      <span class="tech-pill">WebRTC</span>
+      <span class="tech-pill">PeerJS</span>
+      <span class="tech-pill">Service Workers</span>
+      <span class="tech-pill">MediaDevices API</span>
+      <span class="tech-pill">Web Audio API</span>
+
+    </div>
+
+  </div>
+
+</section>
+
+<!-- CTA -->
+<section>
+
+  <div class="container">
+
+    <div class="cta-card reveal">
+
+      <h2>
+        Your network.
+        Your collaboration space.
+      </h2>
+
+      <p>
+        Start chatting, sharing, and collaborating with the people
+        around you.
+      </p>
+
+      <div class="cta-actions">
+
+        <a
+          class="btn btn-primary"
+          href="app.html"
+        >
+          🚀 Launch ChitLAN
+        </a>
+
+        <a
+          class="btn btn-secondary"
+          href="https://github.com/saikishorr/chitlan"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          ⭐ Explore the Source
+        </a>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</section>
+ 
+
+  </main>
+
+  <!-- Footer -->
+
+  <footer>
+
+ 
+<div class="container">
+
+  <div class="footer-inner">
+
+    <div class="footer-brand">
+      <strong>⚡ ChitLAN</strong>
+      <br />
+      Real-time collaboration for connected devices.
+    </div>
+
+    <div class="footer-links">
+
+      <a href="app.html">
+        Launch App
+      </a>
+
+      <a
+        href="https://github.com/saikishorr/chitlan"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        GitHub
+      </a>
+
+    </div>
+
+  </div>
+
+  <p class="copyright">
+    Built with ❤️ by Saikishor Rasala · ChitLAN v2.0
+  </p>
+
+</div>
+ 
+
+  </footer>
+
+  <script>
+    /*
+     * Navbar scroll state
+     */
+    const navbar = document.getElementById("navbar");
+
+    function updateNavbar() {
+      navbar.classList.toggle("scrolled", window.scrollY > 30);
+    }
+
+    window.addEventListener("scroll", updateNavbar, {
+      passive: true
+    });
+
+    updateNavbar();
+
+
+    /*
+     * Scroll reveal animations
+     */
+    const revealElements = document.querySelectorAll(".reveal");
+
+    const revealObserver = new IntersectionObserver(
+      (entries, observer) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+
+          entry.target.classList.add("visible");
+          observer.unobserve(entry.target);
+        });
+      },
+      {
+        threshold: 0.12
+      }
+    );
+
+    revealElements.forEach((element) => {
+      revealObserver.observe(element);
+    });
+
+
+    /*
+     * Animated statistic counter
+     */
+    const counters = document.querySelectorAll("[data-count]");
+
+    const counterObserver = new IntersectionObserver(
+      (entries, observer) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+
+          const element = entry.target;
+          const target = Number(element.dataset.count);
+          const duration = 900;
+          const startTime = performance.now();
+
+          function updateCounter(currentTime) {
+            const progress = Math.min(
+              (currentTime - startTime) / duration,
+              1
+            );
+
+            const easedProgress =
+              1 - Math.pow(1 - progress, 3);
+
+            element.textContent =
+              Math.floor(target * easedProgress);
+
+            if (progress < 1) {
+              requestAnimationFrame(updateCounter);
+            } else {
+              element.textContent = target;
+            }
+          }
+
+          requestAnimationFrame(updateCounter);
+          observer.unobserve(element);
+        });
+      },
+      {
+        threshold: 0.8
+      }
+    );
+
+    counters.forEach((counter) => {
+      counterObserver.observe(counter);
+    });
+  </script>
+
+</body>
+</html>
