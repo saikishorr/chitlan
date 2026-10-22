@@ -3,12 +3,16 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>ChitLAN v3.0</title>
+<title>ChitLAN v3.3</title>
 
 <meta name="description" content="Real-Time LAN Collaboration Platform">
 <meta name="theme-color" content="#070B14">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="ChitLAN">
 
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💬</text></svg>">
+<link rel="icon" type="image/svg+xml" href="./icons/favicon.svg">
+<link rel="apple-touch-icon" href="./icons/icon-192.png">
+<link rel="manifest" href="./manifest.webmanifest">
 
 <link rel="stylesheet" href="css/app.css">
 <link rel="stylesheet" href="css/sidebar.css">
@@ -24,7 +28,8 @@
 
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
-<script src="https://unpkg.com/peerjs@1.5.5/dist/peerjs.min.js"></script>
+<script defer src="./vendor/peerjs.min.js"></script>
+<script defer src="./vendor/qrcode-generator.js"></script>
 
 </head>
 
@@ -93,10 +98,36 @@ Disconnected
 ⚙
 
 </button>
-<div id="ip-display"></div>
+<div id="connection-state-detail">Disconnected</div>
 </div>
 
 </header>
+
+<div id="offlineBanner" class="offline-banner" role="status" hidden>
+You're offline. You can open the app, but connecting to others needs internet.
+</div>
+
+<section id="quickJoinScreen" class="quick-join-screen" hidden>
+  <div class="quick-join-card">
+    <div class="quick-join-mark" aria-hidden="true">&#128172;</div>
+    <p class="quick-join-eyebrow">You've been invited</p>
+    <h1 id="quickJoinTitle">Join room</h1>
+    <p class="quick-join-description">Choose a name to join this ChitLAN room.</p>
+    <p id="customServerNotice" class="custom-server-notice" role="note" hidden></p>
+    <form id="quickJoinForm">
+      <div class="field">
+        <label for="quickNickname">Your nickname</label>
+        <input type="text" id="quickNickname" autocomplete="nickname" maxlength="24" required placeholder="Enter nickname">
+      </div>
+      <div class="field" id="quickPasscodeField" hidden>
+        <label for="quickPasscode">Room passcode</label>
+        <input type="password" id="quickPasscode" autocomplete="current-password" placeholder="Enter room passcode">
+      </div>
+      <p id="quickJoinError" class="quick-join-error" role="alert" hidden></p>
+      <button type="submit" id="quickJoinButton" class="launch-btn">Join room</button>
+    </form>
+  </div>
+</section>
 
 <section class="hero">
 
@@ -104,7 +135,7 @@ Disconnected
 
 <div class="hero-badge">
 
-Version 3.0
+Version 3.3
 
 </div>
 
@@ -132,11 +163,50 @@ without servers.
 
 <div class="connection-card">
 
-<h3>
+<div class="connection-card-heading">
+<h3>Start Session</h3>
+<button type="button" id="connectionSettingsToggle" class="icon-btn connection-settings-toggle" aria-label="Connection settings" aria-expanded="false" aria-controls="connectionSettingsPanel">&#9881;</button>
+</div>
 
-Start Session
-
-</h3>
+<section id="connectionSettingsPanel" class="connection-settings-panel" aria-labelledby="connectionSettingsTitle" hidden>
+  <h4 id="connectionSettingsTitle">Connection settings</h4>
+  <p class="connection-settings-help">Choose where peers find each other and which ICE servers help browsers connect directly.</p>
+  <div class="field">
+    <label for="signalingMode">Signaling server</label>
+    <select id="signalingMode">
+      <option value="public">Public (default)</option>
+      <option value="custom">Custom</option>
+    </select>
+  </div>
+  <div id="customSignalingFields" hidden>
+    <div class="field">
+      <label for="signalingHost">Host</label>
+      <input type="text" id="signalingHost" autocomplete="url" placeholder="peer.example.com">
+    </div>
+    <div class="connection-settings-grid">
+      <div class="field">
+        <label for="signalingPort">Port</label>
+        <input type="number" id="signalingPort" min="1" max="65535" value="443" inputmode="numeric">
+      </div>
+      <div class="field">
+        <label for="signalingPath">Path</label>
+        <input type="text" id="signalingPath" value="/peerjs" placeholder="/peerjs">
+      </div>
+    </div>
+    <label class="connection-settings-checkbox" for="signalingSecure">
+      <input type="checkbox" id="signalingSecure" checked>
+      Use secure WebSocket (wss)
+    </label>
+    <p class="connection-settings-help">This app is served over HTTPS. A custom server must use WSS/HTTPS with a valid TLS certificate.</p>
+  </div>
+  <div class="connection-settings-subheading">
+    <strong>ICE servers</strong>
+    <button type="button" id="addIceServerBtn" class="dialog-button">Add server</button>
+  </div>
+  <div id="iceServerList" class="ice-server-list"></div>
+  <button type="button" id="testConnectionBtn" class="dialog-button connection-test-button">Test connection</button>
+  <p id="connectionTestStatus" class="connection-test-status" role="status" aria-live="polite"></p>
+</section>
 
 <div class="field">
 
@@ -149,7 +219,8 @@ Nickname
 <input
 type="text"
 id="nickname"
-placeholder="Enter nickname">
+placeholder="Enter nickname"
+maxlength="24">
 
 </div>
 
@@ -222,13 +293,21 @@ Join
 
 <div class="field">
 
+<label for="room-passcode">Room passcode (optional)</label>
+
+<input type="password" id="room-passcode" autocomplete="off" placeholder="Leave blank for no passcode">
+
+</div>
+
+<div class="field">
+
 <label>
 
-Your Peer ID
+Your Room Code
 
 </label>
 
-<div class="copy-group">
+<div class="copy-group" id="roomCodeGroup">
 
 <input
 type="text"
@@ -241,6 +320,12 @@ Copy
 
 </button>
 
+<button id="showQrBtn" type="button">
+
+Show QR
+
+</button>
+
 </div>
 
 </div>
@@ -249,7 +334,7 @@ Copy
 
 <label>
 
-Connect to Host
+Join Room
 
 </label>
 
@@ -258,11 +343,17 @@ Connect to Host
 <input
 type="text"
 id="connect-id"
-placeholder="Peer ID">
+placeholder="ABC-234 or chitlan-abc234">
 
 <button id="connectBtn">
 
 Connect
+
+</button>
+
+<button id="tryAgainBtn" type="button" style="display:none;">
+
+Try again
 
 </button>
 
@@ -431,7 +522,7 @@ Quick Actions
 
 <span>
 
-Copy Room ID
+Copy Room Code
 
 </span>
 
@@ -456,6 +547,18 @@ Share Invite
 <span>
 
 Clear Chat
+
+</span>
+
+</button>
+
+<button id="exportChatBtn" class="action-btn">
+
+&#128229;
+
+<span>
+
+Export chat
 
 </span>
 
@@ -619,7 +722,7 @@ Welcome to ChitLAN
 
 Your secure peer-to-peer workspace is ready.
 
-Invite your teammates using your Peer ID to start chatting,
+Invite your teammates using your room code to start chatting,
 sharing files, voice calling and screen sharing.
 
 </p>
@@ -1083,45 +1186,13 @@ Latency
 
 <span>
 
-Download
-
-</span>
-
-<strong id="downloadSpeed">
-
---
-
-</strong>
-
-</div>
-
-<div class="health-item">
-
-<span>
-
-Upload
-
-</span>
-
-<strong id="uploadSpeed">
-
---
-
-</strong>
-
-</div>
-
-<div class="health-item">
-
-<span>
-
 Connection
 
 </span>
 
 <strong id="connectionQuality">
 
-Excellent
+Offline
 
 </strong>
 
@@ -1153,6 +1224,23 @@ Excellent
 </div>
 
 <!-- GIF Selector Modal -->
+<div id="qrModal" class="qr-modal" hidden>
+  <div class="qr-modal-overlay" id="qrModalOverlay"></div>
+  <div class="qr-modal-content" role="dialog" aria-modal="true" aria-labelledby="qrModalTitle" tabindex="-1">
+    <div class="qr-modal-header">
+      <h2 id="qrModalTitle">Room invite</h2>
+      <button type="button" id="closeQrModalBtn" class="icon-btn" aria-label="Close QR invite">&times;</button>
+    </div>
+    <canvas id="inviteQrCanvas" width="320" height="320" aria-label="QR code for the room invite"></canvas>
+    <strong id="qrRoomCode" class="qr-room-code"></strong>
+    <p id="qrInviteUrl" class="qr-invite-url"></p>
+    <div class="qr-modal-actions">
+      <button type="button" id="shareQrInviteBtn" class="launch-btn">Share invite</button>
+      <button type="button" id="closeQrModalAction" class="dialog-button">Close</button>
+    </div>
+  </div>
+</div>
+
 <div id="gifModal" class="gif-modal" style="display:none;">
   <div class="gif-modal-overlay" id="gifModalOverlay"></div>
   <div class="gif-modal-content">

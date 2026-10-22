@@ -1,99 +1,45 @@
-# 💬 ChitLAN – Real-Time Collaboration On Your Local Network
+﻿# ChitLAN
 
-**Latest Version:** **v3.0.0 – Ultimate Real-Time Workspace & Video Collaboration Edition**
+ChitLAN is a static, browser-based chat and meeting app. It supports rooms of up to 10 people, including the host, with chat, GIFs, file transfers, voice, video, and screen sharing. It uses vanilla HTML, CSS, and JavaScript ES modules, with no build step.
 
-**ChitLAN** is a lightweight, browser-based **peer-to-peer collaboration workspace** designed for Local Area Networks (LAN) and direct browser mesh networks. It combines group messaging, camera video meetings, voice chat, live screen sharing, searchable emoji/GIF broadcasting, and high-speed file transfers into a single application—all without requiring servers, cloud services, or user accounts.
+## Features
 
-Built entirely with **WebRTC** and **PeerJS**, ChitLAN enables secure, direct communication between devices on the same network.
+- Room codes and optional room passcodes
+- Room chat, typing indicators, chat history, GIFs, and chat export
+- Voice calls, video meetings, and screen sharing
+- Host controls for locking rooms and removing participants
+- Peer-to-peer file transfers, with a maximum supported file size of 100 GiB
+- Progressive Web App shell and install support
 
----
+Receiving files larger than 64 MiB requires browser support for the Origin Private File System and enough available local storage. Without that support, a browser can receive files up to 64 MiB.
 
-![License](https://img.shields.io/badge/license-MIT-green)
-![PeerJS](https://img.shields.io/badge/peerjs-1.5.5-yellow)
-![Status](https://img.shields.io/badge/status-active-brightgreen)
-![Version](https://img.shields.io/badge/version-v3.0.0-blue)
-![Platform](https://img.shields.io/badge/platform-browser-lightgrey)
-![WebRTC](https://img.shields.io/badge/technology-WebRTC-red)
-![PWA](https://img.shields.io/badge/PWA-supported-blue)
-![Responsive](https://img.shields.io/badge/mobile-friendly-orange)
+## How it connects
 
----
+Peers find each other through the public PeerJS signaling server, so an internet connection is needed to establish connections. The signaling server helps browsers connect; WebRTC then carries data and media between browsers. Room chat and file chunks are relayed by the host over browser-to-browser data channels, while voice, video, and screen sharing use direct participant connections. A LAN-only setup without internet access needs a self-hosted PeerServer. The app's Connection settings can point rooms to one; see the [self-hosting guide](docs/self-hosting.md) for setup details.
 
-# ✨ Features in Version 3.0.0
+## Run locally
 
-## 💬 Real-Time Workspace Chat & Emojis/GIFs
-- ⚡ Peer-to-peer group chat powered by WebRTC (PeerJS)
-- 👥 Supports up to **10 users** per workspace room
-- 🎨 High-contrast dark glassmorphism design with color options
-- 😀 **WhatsApp / Snapchat Style Emoji Picker**: Keyword search engine with direct text cursor insertion
-- 🎬 **Searchable Animated GIF Catalog**: Search and broadcast animated GIFs directly into chat streams
-- ⌨️ Live typing indicators & message timestamps
-- 🔔 Audio alerts for new messages
+ES modules and camera, microphone, and screen sharing do not work from `file://`. Serve the project over HTTP instead:
 
-## 📹 Camera Video Meetings & Voice
-- 🎥 **Real-Time Camera Video Calls**: Multi-peer WebRTC video stream calls with participant grid tiles
-- 🏷️ Live participant video name badges (`.video-tile-badge`)
-- 📷 On-the-fly camera toggle on/off & mic mute/unmute
-- 🎧 High quality Web Audio streaming with acoustic feedback protection
-
-## 🖥️ Screen Sharing & Takeover Resolution
-- 🖥️ Share desktop, app windows, or browser tabs in real time
-- ⚔️ **Takeover Conflict Resolution**: Interactive prompt when a participant requests to share over an active stream
-- 🏷️ **Active Sharer Title Badges**: Dynamic badges displaying who is currently sharing (`🖥️ Sharavani is sharing screen`)
-- 🍿 Theater mode full-screen overlay modal
-
-## 🔀 Smart Room Auto-Redirection & Mesh Architecture
-- 🔀 **Auto-Redirection Handshake**: If a user attempts to join a non-host peer's local ID, the peer automatically redirects them to the main Host room
-- 🛡️ **10-Member Capacity Limit Enforcement**: Prevents room overload and sends friendly full-room notifications (`⚠️ Room Full 10/10`)
-
-## 👑 Host Control Suite
-- ❌ **Remove / Kick Participant**: Host can remove unwanted or uninvited participants with a single click
-- 🔇 **Mute All**: Host can mute all room microphones simultaneously
-- 🔒 **Lock Room**: Host can lock the workspace room against new joiners
-
-## 📁 Advanced High-Speed File Transfer
-- 📤 Direct peer-to-peer file transfer up to **100 GB**
-- 📊 Monotonic **0–100% progress tracking** with real-time throughput speed (`MB/s`)
-- 🖼️ Inline image previews & direct download links
-
----
-
-# 🌐 Live Demo & Getting Started
-
-### 🚀 Launch ChitLAN
-https://saikishorr.github.io/chitlan/
-
-> **Note:** All participants must be connected to the same Local Area Network (LAN) or accessible WebRTC network.
-
-### Clone & Run Locally
 ```bash
-git clone https://github.com/saikishorr/chitlan.git
-cd chitlan
+python -m http.server 8080
 ```
-Open `app.html` or `index.html` directly in your Web Browser.
 
----
+Then open <http://localhost:8080/app.html> in a browser. The landing page is at <http://localhost:8080/>.
 
-# 🛠️ Technology Stack
-- **HTML5 & Vanilla CSS3** (Custom Glassmorphism Design System)
-- **JavaScript (ES6+ Modular Architecture)**
-- **WebRTC DataChannels & MediaStreams**
-- **PeerJS 1.5.5**
-- **Service Workers (PWA Support)**
+## Deployment
 
----
+GitHub Pages deploys only the static app shell and public assets from the `main` branch. The app uses relative paths and is published at <https://saikishorr.github.io/chitlan/>. A deploy runs automatically after CI passes on `main`; to deploy by hand, open the Actions tab, choose **Deploy to GitHub Pages** and click **Run workflow**.
 
-# 📜 Version History
+For every release, bump `APP_VERSION` in `js/constants.js`. The service worker names its cache after that version, so the bump is what makes returning visitors' browsers drop the old cached files.
 
-| Version | Highlights |
-|----------|------------|
-| **v3.0.0** | 📹 Camera Video Meetings, 🖥️ Screen Takeover & Sharer Badges, 🔀 Smart Auto-Redirection, 👑 Host Control Suite (Kick, Mute All, Lock Room), 😀 WhatsApp Emoji Picker, 🎬 GIF Search Catalog, 📁 Monotonic Progress (0-100% fix) |
-| **v2.0.0** | 🎤 Voice Chat, 🖥️ Screen Sharing, 📁 Advanced File Sharing, 📲 PWA Support, 🌍 Public IP Detection, 💾 Chat History |
-| **v1.2.0** | File sharing, image previews, acknowledgements, large file support |
-| **v1.1.0** | Multi-user support, improved UI, dark mode |
-| **v1.0.0** | Initial release |
+## Documentation
 
----
+- [Version 3.0.0 release notes](docs/release-notes/v3.0.0.md)
+- [Version 2.0.0 release notes](docs/release-notes/v2.0.0.md)
+- [Project audit (July 2026)](docs/audit-2026-07.md)
+- [Security policy](SECURITY.md)
 
-# 📄 License
-Licensed under the **MIT License**.
+## License
+
+ChitLAN is licensed under the MIT License. See [LICENSE](LICENSE).

@@ -1,0 +1,51 @@
+name: Deploy to GitHub Pages
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+    branches: [main]
+  # Lets you deploy by hand from the Actions tab (Run workflow), e.g. if CI was flaky.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build:
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout tested revision
+        uses: actions/checkout@v4
+        with:
+          # After CI: the exact commit CI tested. Manual run: the branch you picked.
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+      - name: Assemble public site
+        run: |
+          mkdir _site
+          cp index.html app.html 404.html ding.mp3 og-image.png robots.txt sitemap.xml manifest.webmanifest sw.js .nojekyll _site/
+          cp -R css js vendor icons _site/
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+  deploy:
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main') }}
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

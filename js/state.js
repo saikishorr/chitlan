@@ -1,41 +1,65 @@
-const state = {
-  peer: null,
-  conn: null,
-  connections: [],
-  isHost: false,
-  isRoomLocked: false,
-  myNickname: '',
-  myColor: '#60a5fa',
-  
-  // Voice & Video Call State
-  localStream: null,
-  videoStream: null,
-  activeCalls: {},
-  activeVideoCalls: {},
-  isMuted: false,
-  isCamOn: false,
-  isInCall: false,
-  isInVideoMeeting: false,
-  
-  // Screen Share State
-  screenStream: null,
-  activeScreenCalls: {},
-  currentScreenSharer: null,
-  activeScreenSharersMap: {},
-  
-  // File Transfer State
-  incomingFiles: {},
-  outgoingFiles: {},
-  
-  // App & Activity State
-  unreadCount: 0,
-  pageFocused: true,
-  sessionStartTime: null,
-  sessionTimerId: null,
-  
-  // Statistics Counters
-  messagesSent: 0,
-  filesTransferred: 0
-};
+export function createInitialState() {
+  return {
+    peer: null,
+    peerReady: null,
+    cancelPeerInit: null,
+    cancelPendingConnection: null,
+    conn: null,
+    connections: [],
+    roster: [],
+    kickedPeerIds: new Set(),
+    notifyCallState: null,
+    isHost: false,
+    isRoomLocked: false,
+    roomCode: '',
+    peerSignalSettings: null,
+    roomPasscode: '',
+    myNickname: '',
+    myColor: '#60a5fa',
+    localStream: null,
+    videoStream: null,
+    activeCalls: {},
+    activeVideoCalls: {},
+    remoteVideoStreams: {},
+    remoteMediaJoined: {},
+    // Peer IDs last seen in a voice or video call, used to show the join banner only when
+    // someone newly starts or joins a call.
+    callMemberIdsSeen: new Set(),
+    // True after the user leaves a call: incoming listen-only calls are refused until they
+    // join a call again.
+    listenMuted: false,
+    videoCrowdNoticeShown: false,
+    isMuted: false,
+    isCamOn: false,
+    isInCall: false,
+    isInVideoMeeting: false,
+    screenStream: null,
+    activeScreenCalls: {},
+    incomingScreenCalls: {},
+    currentScreenSharer: null,
+    currentScreenSharerPeerId: null,
+    activeScreenSharersMap: {},
+    incomingFiles: {},
+    outgoingFiles: {},
+    unreadCount: 0,
+    pageFocused: true,
+    sessionStartTime: null,
+    sessionTimerId: null,
+    telemetryIntervalId: null,
+    reconnectTimeoutId: null,
+    reconnectAttempt: 0,
+    reconnectStopped: false,
+    reconnecting: false,
+    hasJoinedRoom: false,
+    connectionHealthMeasured: false,
+    managedTimeouts: new Set(),
+    managedIntervals: new Set(),
+    typingTimeout: null,
+    messagesSent: 0,
+    filesTransferred: 0
+  };
+}
+
+const state = createInitialState();
 
 export default state;

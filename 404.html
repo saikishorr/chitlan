@@ -1,0 +1,68 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#070B14">
+  <title>Page not found | ChitLAN</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      min-height: 100vh;
+      margin: 0;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      color: #f8fafc;
+      background: radial-gradient(circle at 15% 10%, #322178 0, transparent 38%),
+        radial-gradient(circle at 90% 90%, #0c728f 0, transparent 35%),
+        linear-gradient(135deg, #070b14, #0d1224);
+      font: 16px/1.6 Inter, ui-sans-serif, system-ui, sans-serif;
+    }
+    main {
+      width: min(560px, 100%);
+      padding: 42px 36px;
+      text-align: center;
+      background: rgba(255, 255, 255, .06);
+      border: 1px solid rgba(255, 255, 255, .14);
+      border-radius: 24px;
+      box-shadow: 0 24px 70px rgba(0, 0, 0, .35);
+      backdrop-filter: blur(18px);
+    }
+    .mark {
+      width: 58px;
+      height: 58px;
+      margin: 0 auto 18px;
+      display: grid;
+      place-items: center;
+      border-radius: 18px;
+      background: linear-gradient(135deg, #7c5cff, #22d3ee);
+      font-size: 30px;
+    }
+    h1 { margin: 0; font-size: clamp(28px, 6vw, 40px); }
+    p { margin: 12px 0 28px; color: #b8c1d4; }
+    nav { display: flex; justify-content: center; flex-wrap: wrap; gap: 12px; }
+    a {
+      padding: 11px 18px;
+      color: #fff;
+      text-decoration: none;
+      border: 1px solid rgba(255, 255, 255, .2);
+      border-radius: 12px;
+      background: rgba(255, 255, 255, .08);
+    }
+    a:first-child { border: 0; background: linear-gradient(135deg, #7c5cff, #22d3ee); }
+    a:focus-visible { outline: 3px solid #22d3ee; outline-offset: 3px; }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="mark" aria-hidden="true">💬</div>
+    <h1>Page not found</h1>
+    <p>That page isn’t here. Head back to ChitLAN or open the chat app.</p>
+    <nav aria-label="ChitLAN pages">
+      <a href="./">Home</a>
+      <a href="./app.html">Open ChitLAN</a>
+    </nav>
+  </main>
+</body>
+</html>
