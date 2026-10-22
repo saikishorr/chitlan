@@ -1,6 +1,49 @@
 import state from './state.js';
-import { safeText, formatMessageTime, showToast } from './utils.js';
-import { NOTIFICATION_SOUND_SRC, THEME_KEY } from './constants.js';
+import { safeText, formatMessageTime, showToast, scheduleTimeout, scheduleInterval, clearManagedTimeout, clearManagedInterval } from './utils.js';
+import { CHAT_HISTORY_KEY, NOTIFICATION_SOUND_SRC, THEME_KEY } from './constants.js';
+
+const typingPeers = new Map();
+let gifRenderId = 0;
+
+function chatHistoryStorageKey(roomCode = state.roomCode) {
+  return roomCode ? `${CHAT_HISTORY_KEY}:${roomCode}` : '';
+}
+
+function readChatHistory(roomCode = state.roomCode) {
+  const key = chatHistoryStorageKey(roomCode);
+  if (!key) return [];
+  try {
+    const saved = JSON.parse(localStorage.getItem(key) || '[]');
+    return Array.isArray(saved) ? saved.filter(item => item && typeof item.sender === 'string'
+      && (typeof item.message === 'string' || isValidGifId(item.gifId))).slice(-200) : [];
+  } catch (error) {
+    return [];
+  }
+}
+
+function writeChatHistory(entries, roomCode = state.roomCode) {
+  const key = chatHistoryStorageKey(roomCode);
+  if (!key) return;
+  try {
+    localStorage.setItem(key, JSON.stringify(entries.slice(-200)));
+  } catch (error) {
+    // Storage can be unavailable or full; chat should continue normally.
+  }
+}
+
+function saveChatMessage(entry) {
+  writeChatHistory([...readChatHistory(), entry]);
+}
+
+function renderTypingIndicator() {
+  const el = document.getElementById('typing-indicator');
+  if (!el) return;
+  const names = Array.from(typingPeers.values(), entry => entry.name).filter(Boolean);
+  if (names.length === 1) el.textContent = `${names[0]} is typing`;
+  else if (names.length === 2) el.textContent = `${names[0]} and ${names[1]} are typing`;
+  else if (names.length > 2) el.textContent = 'Several people are typing';
+  else el.textContent = '';
+}
 
 export const EMOJI_DATABASE = [
   { emoji: '😀', keywords: ['smile', 'happy', 'grin', 'face', 'joy'] },
@@ -137,12 +180,12 @@ export const EMOJI_CATEGORIES = {
 };
 
 export const RICH_GIF_CATALOG = [
-  { url: 'https://media.giphy.com/media/l0HlHFRbmaZtBRhXG/giphy.gif', tags: ['trending', 'laugh', 'funny', 'hha', 'lol'] },
-  { url: 'https://media.giphy.com/media/3o7TKsjN41iDfsu6M8/giphy.gif', tags: ['trending', 'dance', 'happy', 'party'] },
-  { url: 'https://media.giphy.com/media/26n6WywJyh39n1pBu/giphy.gif', tags: ['trending', 'funny', 'cat', 'lol', 'animal'] },
-  { url: 'https://media.giphy.com/media/d31w24psGYeekCXY/giphy.gif', tags: ['trending', 'reaction', 'shock', 'wow', 'omg'] },
-  { url: 'https://media.giphy.com/media/l41lI4bYmcsPJX9Go/giphy.gif', tags: ['trending', 'clap', 'applause', 'bravo'] },
-  { url: 'https://media.giphy.com/media/xT9IgG5083m3gVvxbO/giphy.gif', tags: ['trending', 'love', 'heart', 'hug'] },
+  { url: 'https://media.giphy.com/media/l0HlHFRbmaZtBRhXG/giphy.gif', trending: true, tags: ['trending', 'laugh', 'funny', 'hha', 'lol'] },
+  { url: 'https://media.giphy.com/media/3o7TKsjN41iDfsu6M8/giphy.gif', trending: true, tags: ['trending', 'dance', 'happy', 'party'] },
+  { url: 'https://media.giphy.com/media/26n6WywJyh39n1pBu/giphy.gif', trending: true, tags: ['trending', 'funny', 'cat', 'lol', 'animal'] },
+  { url: 'https://media.giphy.com/media/d31w24psGYeekCXY/giphy.gif', trending: true, tags: ['trending', 'reaction', 'shock', 'wow', 'omg'] },
+  { url: 'https://media.giphy.com/media/l41lI4bYmcsPJX9Go/giphy.gif', trending: true, tags: ['trending', 'clap', 'applause', 'bravo'] },
+  { url: 'https://media.giphy.com/media/xT9IgG5083m3gVvxbO/giphy.gif', trending: true, tags: ['trending', 'love', 'heart', 'hug'] },
   { url: 'https://media.giphy.com/media/l3fQf1OEAq0iri9RC/giphy.gif', tags: ['funny', 'meme', 'joke', 'fail'] },
   { url: 'https://media.giphy.com/media/xT9IgN8YKRGByGv528/giphy.gif', tags: ['funny', 'laugh', 'crazy', 'fun'] },
   { url: 'https://media.giphy.com/media/3oKIPnAiaMCws8nOsE/giphy.gif', tags: ['funny', 'popcorn', 'movie', 'wait'] },
@@ -163,13 +206,19 @@ export const RICH_GIF_CATALOG = [
   { url: 'https://media.giphy.com/media/3oEduV4NOSCI48G4Wk/giphy.gif', tags: ['gaming', 'pixel', 'arcade', 'retro'] }
 ];
 
+function isValidGifId(gifId) {
+  return Number.isInteger(gifId) && gifId >= 0 && gifId < RICH_GIF_CATALOG.length;
+}
+
 export function setConnectionStatus(text, statusState = 'disconnected') {
   const navLabel = document.getElementById('navConnectionState');
   const sidebarLabel = document.getElementById('sidebarConnectionState');
+  const detailLabel = document.getElementById('connection-state-detail');
   const dot = document.getElementById('connectionDot');
 
   if (navLabel) navLabel.textContent = text;
   if (sidebarLabel) sidebarLabel.textContent = text;
+  if (detailLabel) detailLabel.textContent = text;
 
   if (dot) {
     dot.className = 'status-dot';
@@ -177,7 +226,53 @@ export function setConnectionStatus(text, statusState = 'disconnected') {
     if (statusState === 'connecting') dot.classList.add('connecting');
   }
 
-  updateConnectionHealth(statusState === 'connected' ? 8 : null);
+  if (statusState !== 'connected' || !state.connectionHealthMeasured) updateConnectionHealth(null);
+}
+
+export function showConfirmDialog(message, { title = 'Please confirm', confirmText = 'Allow', cancelText = 'Cancel' } = {}) {
+  return new Promise(resolve => {
+    const overlay = document.createElement('div');
+    overlay.className = 'chitlan-dialog-overlay';
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:20000;background:var(--modal-overlay-85);display:grid;place-items:center;padding:20px;';
+    const panel = document.createElement('div');
+    panel.setAttribute('role', 'dialog');
+    panel.setAttribute('aria-modal', 'true');
+    panel.style.cssText = 'width:min(420px,100%);background:var(--modal-bg);color:var(--text);border:1px solid var(--border);border-radius:14px;padding:22px;box-shadow:0 20px 60px var(--shadow-dark-50);';
+    const heading = document.createElement('h2');
+    heading.textContent = title;
+    const description = document.createElement('p');
+    description.textContent = message;
+    const actions = document.createElement('div');
+    actions.style.cssText = 'display:flex;justify-content:flex-end;gap:10px;margin-top:20px;';
+    let settled = false;
+    const finish = value => {
+      if (settled) return;
+      settled = true;
+      overlay.remove();
+      resolve(value);
+    };
+    const cancel = document.createElement('button');
+    cancel.type = 'button';
+    cancel.className = 'dialog-button';
+    cancel.textContent = cancelText;
+    cancel.addEventListener('click', () => finish(false));
+    const confirm = document.createElement('button');
+    confirm.type = 'button';
+    confirm.className = 'dialog-button primary';
+    confirm.textContent = confirmText;
+    confirm.addEventListener('click', () => finish(true));
+    overlay.addEventListener('click', event => {
+      if (event.target === overlay) finish(false);
+    });
+    panel.addEventListener('keydown', event => {
+      if (event.key === 'Escape') finish(false);
+    });
+    actions.append(cancel, confirm);
+    panel.append(heading, description, actions);
+    overlay.appendChild(panel);
+    document.body.appendChild(overlay);
+    confirm.focus();
+  });
 }
 
 export function updateProfileUI(nickname, color, role) {
@@ -208,18 +303,23 @@ export function renderUserList(users) {
 
   if (!container) return;
 
-  container.innerHTML = '';
+  container.replaceChildren();
 
   if (!users || users.length === 0) {
-    container.innerHTML = '<div class="empty-state">Waiting for users...</div>';
+    const empty = document.createElement('div');
+    empty.className = 'empty-state';
+    empty.textContent = 'Waiting for users...';
+    container.appendChild(empty);
     if (peerCount) peerCount.textContent = '0';
     if (statUsers) statUsers.textContent = '1';
     return;
   }
 
-  users.forEach(name => {
-    const isMe = name.includes('(You)');
-    const cleanName = name.replace(' (You)', '');
+  users.forEach(member => {
+    const name = member.nickname || 'Peer';
+    const isMe = member.peerId === state.peer?.id;
+    const cleanName = name;
+    const displayName = `${name}${isMe ? ' (You)' : ''}`;
     const item = document.createElement('div');
     item.className = 'user';
 
@@ -228,19 +328,33 @@ export function renderUserList(users) {
       kickBtnHtml = `<button class="kick-btn" title="Remove ${safeText(cleanName)} from room">❌ Kick</button>`;
     }
 
-    item.innerHTML = `
-      <span class="user-dot"></span>
-      <span class="user-name">${safeText(name)}</span>
-      ${kickBtnHtml}
-    `;
+    const dot = document.createElement('span');
+    dot.className = 'user-dot';
+    const label = document.createElement('span');
+    label.className = 'user-name';
+    label.textContent = displayName;
+    item.append(dot, label);
 
     if (state.isHost && !isMe) {
-      const btn = item.querySelector('.kick-btn');
-      if (btn) {
-        btn.addEventListener('click', (e) => {
+      const btn = document.createElement('button');
+      btn.className = 'kick-btn';
+      btn.type = 'button';
+      btn.textContent = 'Kick';
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        import('./peer.js').then(m => m.kickParticipant(member.peerId));
+      });
+      item.appendChild(btn);
+      if (member.isSharing) {
+        const stopShareBtn = document.createElement('button');
+        stopShareBtn.className = 'kick-btn';
+        stopShareBtn.type = 'button';
+        stopShareBtn.textContent = 'Stop sharing';
+        stopShareBtn.addEventListener('click', e => {
           e.stopPropagation();
-          import('./peer.js').then(m => m.kickParticipantByName(cleanName));
+          import('./screen.js').then(module => module.forceStopScreenShare(member.peerId));
         });
+        item.appendChild(stopShareBtn);
       }
     }
 
@@ -252,7 +366,8 @@ export function renderUserList(users) {
   if (statUsers) statUsers.textContent = count;
 }
 
-export function appendMessage(sender, msg, color = '#60a5fa', isSender = false, timestamp = Date.now(), isHtml = false) {
+export function appendMessage(sender, msg, color = '#60a5fa', isSender = false, timestamp = Date.now(), fromPeerId = null, { persist = true, notify = true, gifId = null } = {}) {
+  if (gifId !== null && !isValidGifId(gifId)) return;
   const messagesDiv = document.getElementById('messages');
   if (!messagesDiv) return;
 
@@ -260,20 +375,36 @@ export function appendMessage(sender, msg, color = '#60a5fa', isSender = false, 
   if (welcomeCard) welcomeCard.remove();
 
   const div = document.createElement('div');
-  div.className = 'message ' + (isSender || sender === state.myNickname ? 'right self' : 'left');
+  const isOwnMessage = isSender || (!!fromPeerId && fromPeerId === state.peer?.id);
+  div.className = 'message ' + (isOwnMessage ? 'right self' : 'left');
 
-  const safeMsg = isHtml ? msg : safeText(msg);
   const formattedTime = formatMessageTime(timestamp);
-  const initialLetter = safeText(sender).charAt(0).toUpperCase();
-
-  div.innerHTML = `
-    <div class="avatar" style="background:${color}">${initialLetter}</div>
-    <div class="bubble">
-      <strong style="color:${color}">${safeText(sender)}</strong>
-      <div>${safeMsg}</div>
-      <div class="message-time">${formattedTime}</div>
-    </div>
-  `;
+  const safeColor = /^#[0-9a-f]{6}$/i.test(color || '') ? color : '#60a5fa';
+  const avatar = document.createElement('div');
+  avatar.className = 'avatar';
+  avatar.style.backgroundColor = safeColor;
+  avatar.textContent = String(sender || '').charAt(0).toUpperCase();
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble';
+  const senderLabel = document.createElement('strong');
+  senderLabel.style.color = safeColor;
+  senderLabel.textContent = sender || 'Peer';
+  const content = document.createElement('div');
+  if (gifId !== null) {
+    const image = document.createElement('img');
+    image.src = RICH_GIF_CATALOG[gifId].url;
+    image.alt = 'GIF';
+    image.className = 'gif-message-img';
+    image.addEventListener('error', () => image.remove(), { once: true });
+    content.appendChild(image);
+  } else {
+    content.textContent = String(msg ?? '');
+  }
+  const messageTime = document.createElement('div');
+  messageTime.className = 'message-time';
+  messageTime.textContent = formattedTime;
+  bubble.append(senderLabel, content, messageTime);
+  div.append(avatar, bubble);
 
   messagesDiv.appendChild(div);
   messagesDiv.scrollTop = messagesDiv.scrollHeight;
@@ -284,7 +415,19 @@ export function appendMessage(sender, msg, color = '#60a5fa', isSender = false, 
   if (msgCountEl) msgCountEl.textContent = state.messagesSent;
   if (statMsgEl) statMsgEl.textContent = state.messagesSent;
 
-  if (!isSender && sender !== 'System') {
+  if (persist && sender !== 'System') {
+    saveChatMessage({
+      sender: String(sender || 'Peer'),
+      message: String(msg ?? ''),
+      color: safeColor,
+      timestamp: Number.isFinite(Number(timestamp)) ? Number(timestamp) : Date.now(),
+      ...(gifId !== null ? { gifId } : {}),
+      fromPeerId,
+      isOwn: isOwnMessage
+    });
+  }
+
+  if (notify && !isOwnMessage && sender !== 'System') {
     playNotificationSound();
 
     if (!state.pageFocused) {
@@ -315,26 +458,27 @@ export function appendSystemMessage(msg) {
   addActivityItem('System Notification', msg);
 }
 
-export function updateConnectionHealth(latencyMs, downSpeedText = '--', upSpeedText = '--') {
+export function updateConnectionHealth(latencyMs) {
   const latencyEl = document.getElementById('latency');
-  const downEl = document.getElementById('downloadSpeed');
-  const upEl = document.getElementById('uploadSpeed');
   const qualityEl = document.getElementById('connectionQuality');
 
-  if (latencyEl) {
-    latencyEl.textContent = latencyMs ? `${latencyMs} ms` : (state.peer ? '8 ms' : '--');
-  }
-
-  if (downEl) downEl.textContent = downSpeedText;
-  if (upEl) upEl.textContent = upSpeedText;
+  const hasConnection = !!state.peer && (!!state.conn || !!(state.isHost && state.connections.length));
+  state.connectionHealthMeasured = hasConnection && Number.isFinite(latencyMs);
+  if (latencyEl) latencyEl.textContent = !hasConnection ? 'Offline' : (state.connectionHealthMeasured ? `${latencyMs} ms` : 'Measuring...');
 
   if (qualityEl) {
-    let quality = 'Excellent';
-    let color = '#34d399';
+    let quality = 'Measuring...';
+    let color = '#94a3b8';
 
-    if (!state.peer) {
+    if (!hasConnection) {
       quality = 'Offline';
       color = '#ef4444';
+    } else if (!state.connectionHealthMeasured) {
+      quality = 'Measuring...';
+      color = '#94a3b8';
+    } else if (latencyMs < 70) {
+      quality = 'Excellent';
+      color = '#34d399';
     } else if (latencyMs && latencyMs > 300) {
       quality = 'Poor';
       color = '#f59e0b';
@@ -380,7 +524,9 @@ export function renderEmojis(category = 'smileys', query = '') {
     item.addEventListener('click', () => {
       const msgInput = document.getElementById('msg-input');
       if (msgInput) {
-        msgInput.value += emoji;
+        const start = msgInput.selectionStart ?? msgInput.value.length;
+        const end = msgInput.selectionEnd ?? start;
+        msgInput.setRangeText(emoji, start, end, 'end');
         msgInput.focus();
       }
     });
@@ -417,58 +563,58 @@ export function closeGifModal() {
 export function loadGifs(categoryOrQuery = 'trending') {
   const grid = document.getElementById('gifGrid');
   if (!grid) return;
-
-  grid.innerHTML = '<div class="gif-loading">Loading GIFs...</div>';
-
+  const renderId = ++gifRenderId;
   const query = categoryOrQuery.trim().toLowerCase();
-  let gifs = [];
+  const gifs = query === 'trending'
+    ? RICH_GIF_CATALOG.filter(item => item.trending)
+    : RICH_GIF_CATALOG.filter(item => item.tags.some(tag => tag.includes(query)));
+  grid.replaceChildren();
 
-  if (query) {
-    gifs = RICH_GIF_CATALOG.filter(item => {
-      return item.tags.some(tag => tag.includes(query));
-    }).map(item => item.url);
-  }
+  const showEmptyMessage = () => {
+    if (renderId !== gifRenderId) return;
+    if (grid.querySelector('.gif-item')) return;
+    const empty = document.createElement('div');
+    empty.className = 'gif-empty';
+    empty.textContent = query ? `No GIFs for '${categoryOrQuery.trim()}'` : 'No GIFs available';
+    grid.replaceChildren(empty);
+  };
 
   if (gifs.length === 0) {
-    gifs = RICH_GIF_CATALOG.slice(0, 8).map(i => i.url);
+    showEmptyMessage();
+    return;
   }
 
-  setTimeout(() => {
-    grid.innerHTML = '';
-    gifs.forEach(url => {
-      const card = document.createElement('div');
-      card.className = 'gif-item';
-      card.innerHTML = `<img src="${url}" alt="GIF" loading="lazy">`;
-      card.addEventListener('click', () => {
-        sendGifMessage(url);
-        closeGifModal();
-      });
-      grid.appendChild(card);
+  gifs.forEach(item => {
+    const card = document.createElement('div');
+    card.className = 'gif-item';
+    const image = document.createElement('img');
+    image.src = item.url;
+    image.alt = 'GIF';
+    image.loading = 'lazy';
+    image.addEventListener('error', () => {
+      card.remove();
+      showEmptyMessage();
+    }, { once: true });
+    card.addEventListener('click', () => {
+      sendGifMessage(RICH_GIF_CATALOG.indexOf(item));
+      closeGifModal();
     });
-  }, 150);
+    card.appendChild(image);
+    grid.appendChild(card);
+  });
 }
 
-export function sendGifMessage(gifUrl) {
+export function sendGifMessage(gifId) {
+  if (!isValidGifId(gifId)) return;
   const timestamp = Date.now();
-  const htmlContent = `<img src="${gifUrl}" class="gif-message-img" alt="GIF">`;
-
-  appendMessage(state.myNickname || 'You', htmlContent, state.myColor, true, timestamp, true);
-
-  const payload = {
-    type: 'message',
-    nickname: state.myNickname || 'User',
-    color: state.myColor,
-    message: htmlContent,
-    isHtml: true,
-    timestamp
-  };
+  appendMessage(state.myNickname || 'You', '', state.myColor, true, timestamp, state.peer?.id || null, { gifId });
 
   if (state.isHost) {
     import('./peer.js').then(m => {
-      m.broadcast(state.myNickname || 'Host', htmlContent, state.myColor, null, false, timestamp, true);
+      m.broadcastGif(gifId, timestamp);
     });
   } else if (state.conn) {
-    state.conn.send(payload);
+    state.conn.send({ type: 'gif', gifId, timestamp });
   }
 
   showToast('GIF sent!', 'success');
@@ -495,21 +641,28 @@ export function addActivityItem(title, subtitle) {
   }
 }
 
-export function showTypingIndicator(name) {
-  const el = document.getElementById('typing-indicator');
-  if (!el) return;
-
-  el.textContent = `${safeText(name)} is typing...`;
-
-  clearTimeout(state.typingTimeout);
-  state.typingTimeout = setTimeout(() => {
-    el.textContent = '';
+export function showTypingIndicator(name, peerId = '') {
+  const key = peerId || `name:${String(name || 'Peer')}`;
+  const existing = typingPeers.get(key);
+  if (existing) clearManagedTimeout(existing.timeoutId);
+  const timeoutId = scheduleTimeout(() => {
+    typingPeers.delete(key);
+    renderTypingIndicator();
   }, 1800);
+  typingPeers.set(key, { name: String(name || 'Peer'), timeoutId });
+  renderTypingIndicator();
 }
 
-export function hideTypingIndicator() {
-  const el = document.getElementById('typing-indicator');
-  if (el) el.textContent = '';
+export function hideTypingIndicator(peerId = null) {
+  if (peerId == null) {
+    typingPeers.forEach(entry => clearManagedTimeout(entry.timeoutId));
+    typingPeers.clear();
+  } else {
+    const entry = typingPeers.get(peerId);
+    if (entry) clearManagedTimeout(entry.timeoutId);
+    typingPeers.delete(peerId);
+  }
+  renderTypingIndicator();
 }
 
 export function playNotificationSound() {
@@ -526,21 +679,92 @@ export function playNotificationSound() {
 }
 
 export function toggleTheme() {
-  const isDark = document.body.classList.toggle('dark');
-  localStorage.setItem(THEME_KEY, isDark ? 'dark' : 'light');
-  showToast(`Switched to ${isDark ? 'Dark' : 'Light'} Mode`, 'info');
+  const isLight = document.body.classList.toggle('light');
+  document.documentElement.style.colorScheme = isLight ? 'light' : 'dark';
+  try { localStorage.setItem(THEME_KEY, isLight ? 'light' : 'dark'); } catch (error) {}
+  showToast(`Switched to ${isLight ? 'Light' : 'Dark'} Mode`, 'info');
 }
 
 export function initTheme() {
-  const saved = localStorage.getItem(THEME_KEY);
-  if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-    document.body.classList.add('dark');
+  let saved = null;
+  try { saved = localStorage.getItem(THEME_KEY); } catch (error) {}
+  const prefersLight = typeof window.matchMedia === 'function' && window.matchMedia('(prefers-color-scheme: light)').matches;
+  const useLight = saved === 'light' || (saved !== 'dark' && prefersLight);
+  document.body.classList.toggle('light', useLight);
+  document.documentElement.style.colorScheme = useLight ? 'light' : 'dark';
+}
+
+export function restoreChatHistory(roomCode = state.roomCode) {
+  const messagesDiv = document.getElementById('messages');
+  if (!messagesDiv) return;
+  const welcomeCard = messagesDiv.querySelector('.welcome-card')?.cloneNode(true);
+  const history = readChatHistory(roomCode);
+  state.messagesSent = 0;
+  const msgCountEl = document.getElementById('messageCount');
+  const statMsgEl = document.getElementById('statMessages');
+  if (msgCountEl) msgCountEl.textContent = '0';
+  if (statMsgEl) statMsgEl.textContent = '0';
+  messagesDiv.replaceChildren();
+  if (history.length) {
+    const divider = document.createElement('div');
+    divider.className = 'message history-divider';
+    divider.textContent = 'Earlier messages';
+    messagesDiv.appendChild(divider);
+    history.forEach(entry => {
+      if (entry.isHtml) {
+        appendMessage(entry.sender, '[GIF]', entry.color, !!entry.isOwn, entry.timestamp, entry.fromPeerId || null, {
+          persist: false,
+          notify: false
+        });
+      } else {
+        appendMessage(entry.sender, entry.message, entry.color, !!entry.isOwn, entry.timestamp, entry.fromPeerId || null, {
+          persist: false,
+          notify: false,
+          ...(isValidGifId(entry.gifId) ? { gifId: entry.gifId } : {})
+        });
+      }
+    });
+  } else {
+    if (welcomeCard) {
+      messagesDiv.appendChild(welcomeCard);
+    } else {
+      const card = document.createElement('div');
+      card.className = 'welcome-card';
+      const heading = document.createElement('h2');
+      heading.textContent = 'Your room is ready';
+      const description = document.createElement('p');
+      description.textContent = 'Messages will appear here.';
+      card.append(heading, description);
+      messagesDiv.appendChild(card);
+    }
   }
+  messagesDiv.scrollTop = messagesDiv.scrollHeight;
+}
+
+export function exportChat() {
+  const history = readChatHistory();
+  const lines = history.map(entry => {
+    const timestamp = new Date(entry.timestamp).toLocaleString();
+    const message = entry.isHtml || isValidGifId(entry.gifId) ? '[GIF]' : entry.message;
+    return `[${timestamp}] ${entry.sender}: ${message}`;
+  });
+  const blob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `chitlan-chat-${state.roomCode || 'history'}.txt`;
+  link.click();
+  URL.revokeObjectURL(url);
 }
 
 export function clearChat() {
   const messagesDiv = document.getElementById('messages');
   if (!messagesDiv) return;
+
+  const storageKey = chatHistoryStorageKey();
+  if (storageKey) {
+    try { localStorage.removeItem(storageKey); } catch (error) {}
+  }
 
   messagesDiv.innerHTML = `
     <div class="welcome-card">
@@ -559,13 +783,13 @@ export function clearChat() {
 }
 
 export function startSessionTimer() {
-  if (state.sessionTimerId) clearInterval(state.sessionTimerId);
+  clearManagedInterval(state.sessionTimerId);
   state.sessionStartTime = Date.now();
 
   const durationEl = document.getElementById('statDuration');
   if (!durationEl) return;
 
-  state.sessionTimerId = setInterval(() => {
+  state.sessionTimerId = scheduleInterval(() => {
     const elapsedSeconds = Math.floor((Date.now() - state.sessionStartTime) / 1000);
     const mins = Math.floor(elapsedSeconds / 60).toString().padStart(2, '0');
     const secs = (elapsedSeconds % 60).toString().padStart(2, '0');

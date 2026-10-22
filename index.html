@@ -14,9 +14,14 @@
 
   <meta name="author" content="Saikishor Rasala" />
   <meta name="robots" content="index, follow" />
-  <meta name="theme-color" content="#080b14" />
+  <meta name="theme-color" content="#070B14" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="ChitLAN" />
 
   <link rel="canonical" href="https://saikishorr.github.io/chitlan/" />
+  <link rel="icon" type="image/svg+xml" href="./icons/favicon.svg" />
+  <link rel="apple-touch-icon" href="./icons/icon-192.png" />
+  <link rel="manifest" href="./manifest.webmanifest" />
 
   <!-- Open Graph -->
 
@@ -27,7 +32,9 @@
     content="Chat, talk, share your screen, and transfer files directly between devices using peer-to-peer WebRTC communication."
   />
   <meta property="og:url" content="https://saikishorr.github.io/chitlan/" />
-  <meta property="og:image" content="https://saikishorr.github.io/chitlan/og-image2.3mb.png" />
+  <meta property="og:image" content="https://saikishorr.github.io/chitlan/og-image.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
   <meta property="og:image:alt" content="ChitLAN real-time collaboration platform" />
 
   <!-- Twitter -->
@@ -38,7 +45,7 @@
     name="twitter:description"
     content="A browser-based peer-to-peer collaboration platform for chat, voice, screen sharing, and file transfers."
   />
-  <meta name="twitter:image" content="https://saikishorr.github.io/chitlan/og-image2.3mb.png" />
+  <meta name="twitter:image" content="https://saikishorr.github.io/chitlan/og-image.png" />
 
   <!-- Structured Data -->
 
@@ -49,7 +56,7 @@
     "name": "ChitLAN",
     "applicationCategory": "CommunicationApplication",
     "operatingSystem": "Web Browser",
-    "softwareVersion": "3.0.0",
+    "softwareVersion": "3.3.0",
     "description": "A peer-to-peer real-time collaboration platform for local networks with chat, camera video meetings, screen sharing, and file transfers.",
     "url": "https://saikishorr.github.io/chitlan/",
     "author": {
@@ -1236,6 +1243,19 @@
         transform: none;
       }
     }
+    .offline-banner {
+      padding: 10px 20px;
+      border-bottom: 1px solid rgba(245, 158, 11, 0.35);
+      background: rgba(245, 158, 11, 0.12);
+      color: #fbbf24;
+      text-align: center;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .offline-banner[hidden] {
+      display: none;
+    }
   </style>
 
 </head>
@@ -1286,6 +1306,10 @@
 
   </header>
 
+  <div id="offlineBanner" class="offline-banner" role="status" hidden>
+    You're offline. You can open the app, but connecting to others needs internet.
+  </div>
+
   <main>
 
  
@@ -1298,7 +1322,7 @@
 
       <div class="eyebrow">
         <span class="status-dot"></span>
-        ChitLAN v3.0 is live (Video Meetings & Workspace Mesh)
+        ChitLAN v3.3 is live (Video Meetings & Workspace Mesh)
       </div>
 
       <h1>
@@ -1372,13 +1396,13 @@
     <div class="stats-grid">
 
       <div class="stat reveal">
-        <div class="stat-value" data-count="30">0</div>
+        <div class="stat-value" data-count="10">0</div>
         <div class="stat-label">Users per room</div>
       </div>
 
       <div class="stat reveal delay-one">
-        <div class="stat-value">100 GB </div>
-        <div class="stat-label">Large file transfers</div>
+        <div class="stat-value">P2P</div>
+        <div class="stat-label">File transfers, browser to browser</div>
       </div>
 
       <div class="stat reveal delay-two">
@@ -1478,8 +1502,10 @@
         <div class="feature-icon">📁</div>
         <h3>Advanced File Sharing</h3>
         <p>
-          Transfer files up to 100 GB with monotonic 0–100% progress
-          bars, live throughput speed indicators (MB/s), and previews.
+          Send files straight to the room. Each person accepts or declines
+          first. Files up to 64 MB work in any browser; larger files need a
+          browser with local file storage (Chrome, Edge or Firefox) and
+          enough free space. Live progress, speed and image previews.
         </p>
       </article>
 
@@ -1805,6 +1831,14 @@
     });
 
     updateNavbar();
+
+    const offlineBanner = document.getElementById('offlineBanner');
+    function updateOfflineBanner() {
+      if (offlineBanner) offlineBanner.hidden = navigator.onLine;
+    }
+    window.addEventListener('online', updateOfflineBanner);
+    window.addEventListener('offline', updateOfflineBanner);
+    updateOfflineBanner();
 
 
     /*

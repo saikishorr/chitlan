@@ -1,46 +1,26 @@
-# Security Policy
+﻿# ChitLAN Security Policy
 
 ## Supported Versions
 
-Only the latest stable version of PeerChat is currently supported for security updates.
+The current 3.x release line is supported for security updates.
 
 | Version | Supported |
 |---------|-----------|
-| 1.1.x   | ✅ Yes     |
-| 1.0.x   | ❌ No      |
-
----
+| 3.x     | Yes       |
+| 2.x     | No        |
+| 1.x     | No        |
 
 ## Reporting a Vulnerability
 
-If you discover a security vulnerability in this project, please follow these steps:
+Please do not open a public issue for a security vulnerability. Email the maintainer at **rasalasaikishor@gmail.com** with:
 
-1. **Do not open a public issue.**
-2. Instead, email the maintainer directly at: **rasalasaikishor@gmail.com**
-3. Include the following in your email:
-   - Description of the vulnerability
-   - Steps to reproduce the issue
-   - Potential impact
-   - Any proof of concept (PoC) code if available
+- A description of the vulnerability
+- Steps to reproduce it
+- Its potential impact
+- Any proof-of-concept code, if available
 
-You will receive an acknowledgment within 72 hours. We will investigate and respond with an estimated fix timeline.
-
----
+You will receive an acknowledgment within 72 hours. The project will investigate and respond with an estimated fix timeline.
 
 ## Disclosure Policy
 
-We commit to:
-- Investigating all reported vulnerabilities
-- Providing timely updates on our progress
-- Releasing patches as soon as possible
-- Crediting reporters if desired
-
----
-
-## Suggestions
-
-If you have suggestions for improving the security of this app (e.g., preventing message spoofing or improving peer connection validation), please let us know.
-
----
-
-Thank you for helping keep PeerChat secure!
+The project aims to investigate reports, provide timely updates, release fixes, and credit reporters if they wish.

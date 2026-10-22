@@ -13,7 +13,7 @@ box-shadow:var(--shadow);
 transition:var(--transition);
 }
 .panel:hover{
-border-color:rgba(124,92,255,.35);
+border-color:var(--accent-wash-35);
 }
 .panel-header{
 display:flex;
@@ -33,7 +33,7 @@ font-weight:700;
 text-transform:uppercase;
 }
 .badge.success{
-background:rgba(34,197,94,.15);
+background:var(--success-wash-15);
 color:var(--success);
 }
 .voice-card{
@@ -46,8 +46,8 @@ display:flex;
 align-items:center;
 gap:12px;
 padding:16px;
-background:rgba(255,255,255,.03);
-border:1px solid rgba(255,255,255,.05);
+background:var(--wash-03);
+border:1px solid var(--surface);
 border-radius:16px;
 }
 .pulse{
@@ -74,9 +74,9 @@ gap:8px;
 .panel-btn{
 height:44px;
 border-radius:14px;
-background:rgba(255,255,255,.05);
-border:1px solid rgba(255,255,255,.08);
-color:#fff;
+background:var(--surface);
+border:1px solid var(--surface2);
+color:var(--control-text);
 font-size:13px;
 font-weight:600;
 transition:var(--transition);
@@ -84,24 +84,24 @@ padding:0 6px;
 white-space:nowrap;
 }
 .panel-btn:hover{
-background:rgba(255,255,255,.08);
+background:var(--surface2);
 transform:translateY(-2px);
 }
 .panel-btn.primary{
 background:linear-gradient(135deg,var(--primary),var(--secondary));
 border:none;
-box-shadow:0 10px 25px rgba(124,92,255,.35);
+box-shadow:0 10px 25px var(--accent-wash-35);
 }
 .panel-btn.primary:hover{
-box-shadow:0 15px 35px rgba(124,92,255,.45);
+box-shadow:0 15px 35px var(--accent-glow-45);
 }
 .panel-btn.danger{
-background:rgba(239,68,68,.15);
-border:1px solid rgba(239,68,68,.25);
-color:#FCA5A5;
+background:var(--danger-wash-15);
+border:1px solid var(--danger-wash-25);
+color:var(--danger-soft);
 }
 .panel-btn.danger:hover{
-background:rgba(239,68,68,.25);
+background:var(--danger-wash-25);
 }
 .voice-users{
 display:flex;
@@ -115,13 +115,13 @@ display:flex;
 align-items:center;
 gap:12px;
 padding:12px;
-background:rgba(255,255,255,.03);
-border:1px solid rgba(255,255,255,.05);
+background:var(--wash-03);
+border:1px solid var(--surface);
 border-radius:16px;
 transition:var(--transition);
 }
 .voice-user:hover{
-background:rgba(255,255,255,.06);
+background:var(--wash-06);
 }
 .voice-avatar{
 width:46px;
@@ -131,7 +131,7 @@ display:flex;
 align-items:center;
 justify-content:center;
 background:linear-gradient(135deg,var(--primary),var(--secondary));
-color:#fff;
+color:var(--white);
 font-weight:700;
 font-size:18px;
 position:relative;
@@ -158,7 +158,7 @@ color:var(--muted);
 .voice-level{
 width:80px;
 height:6px;
-background:rgba(255,255,255,.08);
+background:var(--surface2);
 border-radius:30px;
 overflow:hidden;
 }
@@ -200,11 +200,11 @@ animation:wave 1.1s infinite ease-in-out;
   position: relative;
   width: 100%;
   aspect-ratio: 4/3;
-  background: #000;
+  background: var(--black);
   border-radius: 14px;
   overflow: hidden;
   border: 1px solid var(--border);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 8px 20px var(--shadow-dark-40);
 }
 
 .video-tile video {
@@ -219,10 +219,10 @@ animation:wave 1.1s infinite ease-in-out;
   left: 6px;
   right: 6px;
   padding: 4px 8px;
-  background: rgba(10, 15, 30, 0.75);
+  background: var(--video-badge-bg);
   backdrop-filter: blur(8px);
   border-radius: 8px;
-  color: #fff;
+  color: var(--overlay-text);
   font-size: 11px;
   font-weight: 600;
   white-space: nowrap;

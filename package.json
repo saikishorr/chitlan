@@ -1,0 +1,16 @@
+{
+  "name": "chitlan",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "lint": "eslint js tests playwright.config.js eslint.config.js",
+    "test": "playwright test",
+    "serve": "npx http-server -p 8080 -c-1 ."
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.64.1",
+    "eslint": "^10.13.0",
+    "globals": "^17.13.0",
+    "http-server": "^14.1.1"
+  }
+}
