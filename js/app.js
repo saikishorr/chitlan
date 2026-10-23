@@ -17,7 +17,7 @@ import {
 } from './ui.js';
 import { initPeer, connectToHost, broadcast, muteAllParticipants, toggleLockRoom } from './peer.js';
 import { startVoice, startVideoMeeting, toggleCamera, toggleMute, leaveVoice } from './voice.js';
-import { sendFile, clearReceivedFiles, cleanupFileTransfers, cleanupStaleFileEntries } from './files.js';
+import { sendFile, addStagedFiles, renderStagedFiles, clearReceivedFiles, cleanupFileTransfers, cleanupStaleFileEntries } from './files.js';
 import { startScreenShare, stopScreenShare, closeScreenModal } from './screen.js';
 import { resetSession } from './session.js';
 import {
@@ -630,7 +630,6 @@ window.addEventListener('DOMContentLoaded', () => {
 
   const selectFileBtn = document.getElementById('selectFileBtn');
   const fileInput = document.getElementById('fileInput');
-  const selectedFileLabel = document.getElementById('selectedFile');
   const sendFileBtn = document.getElementById('sendFileBtn');
   const fileShareBtn = document.getElementById('fileShareBtn');
   const attachmentBtn = document.getElementById('attachmentBtn');
@@ -645,14 +644,25 @@ window.addEventListener('DOMContentLoaded', () => {
 
   if (fileInput) {
     fileInput.addEventListener('change', () => {
-      if (fileInput.files.length > 0 && selectedFileLabel) {
-        selectedFileLabel.textContent = fileInput.files[0].name;
-      }
+      addStagedFiles(fileInput.files);
+      fileInput.value = '';
     });
   }
 
+  renderStagedFiles();
   if (sendFileBtn) sendFileBtn.addEventListener('click', sendFile);
-  if (fileShareBtn) fileShareBtn.addEventListener('click', sendFile);
+  if (fileShareBtn) fileShareBtn.addEventListener('click', () => {
+    if (state.stagedFiles.length) sendFile();
+    else fileInput?.click();
+  });
+  if (msgInput) {
+    msgInput.addEventListener('paste', event => {
+      const files = event.clipboardData?.files;
+      if (!files?.length) return;
+      event.preventDefault();
+      addStagedFiles(files);
+    });
+  }
 
   // Voice & Video Call Buttons
   const voiceToggleBtn = document.getElementById('voiceToggleBtn');
@@ -791,7 +801,7 @@ window.addEventListener('DOMContentLoaded', () => {
       chatContainer.addEventListener(eventName, e => {
         e.preventDefault();
         e.stopPropagation();
-        chatContainer.style.border = '2px dashed var(--primary)';
+        chatContainer.classList.add('is-drop-target');
       }, false);
     });
 
@@ -799,19 +809,13 @@ window.addEventListener('DOMContentLoaded', () => {
       chatContainer.addEventListener(eventName, e => {
         e.preventDefault();
         e.stopPropagation();
-        chatContainer.style.border = 'none';
+        if (eventName === 'dragleave' && chatContainer.contains(e.relatedTarget)) return;
+        chatContainer.classList.remove('is-drop-target');
       }, false);
     });
 
     chatContainer.addEventListener('drop', e => {
-      const dt = e.dataTransfer;
-      const files = dt.files;
-
-      if (files && files.length > 0 && fileInput) {
-        fileInput.files = files;
-        if (selectedFileLabel) selectedFileLabel.textContent = files[0].name;
-        showToast(`File selected: ${files[0].name}. Click Send File to transfer.`, 'info');
-      }
+      addStagedFiles(e.dataTransfer?.files);
     });
   }
 

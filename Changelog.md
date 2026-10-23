@@ -5,6 +5,17 @@ This project follows [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [Unreleased]
+### Added
+- A file staging tray that combines picker, drag-and-drop and pasted files, with per-file removal, batch limits and a clear action.
+- Batch file offers with file positions, Get all and Skip all receiver actions, and Stop all for queued outgoing files.
+- Playwright coverage for staging files and accepting or skipping a whole batch.
+
+### Changed
+- File offers can include optional `batchId`, `batchIndex` and `batchSize` fields. Receivers remember batch decisions per sender while older offers continue to work.
+
+---
+
 ## [3.3.0] – 2026-10-18
 ### Security
 - Chat, GIFs and file cards are built with safe DOM APIs; peer-supplied HTML and colours can no longer run script.

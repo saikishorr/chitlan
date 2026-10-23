@@ -1,5 +1,6 @@
 export const CHUNK_SIZE = 60 * 1024; // Keep each PeerJS message below common SCTP limits
 export const MAX_FILE_SIZE = 100 * 1024 * 1024 * 1024; // 100GB
+export const MAX_BATCH_FILES = 20;
 export const NOTIFICATION_SOUND_SRC = 'ding.mp3';
 export const APP_TITLE = 'ChitLAN';
 export const APP_VERSION = '3.3.0';
