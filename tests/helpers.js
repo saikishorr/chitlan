@@ -40,7 +40,7 @@ export function fileCard(page, fileName) {
 export async function acceptFile(page, fileName) {
   const card = fileCard(page, fileName);
   await expect(card.locator('.file-status')).toContainText('wants to send you this file', { timeout: 60_000 });
-  await card.getByRole('button', { name: 'Accept' }).click();
+  await card.getByRole('button', { name: 'Accept', exact: true }).click();
 }
 
 // Names of ChitLAN files currently in the browser's private file storage.

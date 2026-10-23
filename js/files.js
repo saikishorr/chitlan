@@ -1,5 +1,5 @@
 import state from './state.js';
-import { CHUNK_SIZE, MAX_FILE_SIZE } from './constants.js';
+import { CHUNK_SIZE, MAX_FILE_SIZE, MAX_BATCH_FILES } from './constants.js';
 import {
   formatFileSize,
   formatSpeed,
@@ -11,6 +11,10 @@ import { playNotificationSound } from './ui.js';
 
 // File sharing protocol. Joiners only talk to the host, so the host relays between them.
 //   file-offer             sender -> receivers: name, size and type, before any file data
+//                          optional batchId (batch- + 32 hex), batchIndex (0-based), batchSize
+//                          with 0 <= batchIndex < batchSize <= MAX_BATCH_FILES. Invalid batch
+//                          fields are discarded; legacy offers still work. Batch decisions
+//                          apply only to this sender peer ID and batchId.
 //   file-offer-recipients  host -> joiner sender: who the host passed the offer on to
 //   file-offer-response    receiver -> sender: accepted or declined
 //   file-offer-closed      sender -> receivers: who is getting the file; other offers expire
@@ -28,6 +32,7 @@ const MEMORY_RECEIVE_LIMIT = 64 * 1024 * 1024;
 const IMAGE_PREVIEW_LIMIT = 20 * 1024 * 1024;
 const INLINE_PREVIEW_TYPES = new Set(['image/png', 'image/jpeg', 'image/gif', 'image/webp']);
 const FILE_ID_PATTERN = /^file-[a-f\d]{32}$/i;
+const BATCH_ID_PATTERN = /^batch-[a-f\d]{32}$/i;
 const CLOSED_FILE_ID_LIMIT = 200;
 
 function createFileId() {
@@ -38,6 +43,21 @@ function createFileId() {
     for (let i = 0; i < bytes.length; i++) bytes[i] = Math.floor(Math.random() * 256);
   }
   return 'file-' + Array.from(bytes, value => value.toString(16).padStart(2, '0')).join('');
+}
+
+function createBatchId() {
+  return createFileId().replace('file-', 'batch-');
+}
+
+function validBatchFields(data) {
+  if (typeof data.batchId !== 'string' || !BATCH_ID_PATTERN.test(data.batchId)
+      || !Number.isInteger(data.batchIndex) || !Number.isInteger(data.batchSize)
+      || data.batchIndex < 0 || data.batchIndex >= data.batchSize || data.batchSize > MAX_BATCH_FILES) return {};
+  return { batchId: data.batchId.toLowerCase(), batchIndex: data.batchIndex, batchSize: data.batchSize };
+}
+
+function fileBatchKey(entry) {
+  return entry.batchId ? JSON.stringify([entry.senderPeerId, entry.batchId]) : null;
 }
 
 function getChunkCount(size) {
@@ -156,12 +176,14 @@ export function appendFileTransferMessage(direction, fileId, name, size, initial
 
   const queueNote = document.createElement('div');
   queueNote.className = 'file-queue-note';
+  const batchPosition = document.createElement('div');
+  batchPosition.className = 'file-batch-position';
 
   const progress = document.createElement('div');
   progress.className = 'file-progress';
   Object.assign(progress.style, {
     height: '6px',
-    background: 'rgba(255,255,255,0.1)',
+    background: 'var(--wash-10)',
     borderRadius: '4px',
     marginTop: '8px',
     overflow: 'hidden'
@@ -182,7 +204,7 @@ export function appendFileTransferMessage(direction, fileId, name, size, initial
 
   const preview = document.createElement('div');
   preview.className = 'file-preview';
-  bubble.append(heading, meta, queueNote, progress, actions, preview);
+  bubble.append(heading, meta, batchPosition, queueNote, progress, actions, preview);
   message.append(avatar, bubble);
   messages.appendChild(message);
   messages.scrollTop = messages.scrollHeight;
@@ -214,6 +236,11 @@ function setTransferActions(fileId, actions) {
 function setQueueNote(fileId, text) {
   const note = findTransferMessage(fileId)?.querySelector('.file-queue-note');
   if (note) note.textContent = text;
+}
+
+function setBatchPosition(entry) {
+  const position = findTransferMessage(entry.fileId)?.querySelector('.file-batch-position');
+  if (position && entry.batchId) position.textContent = 'File ' + (entry.batchIndex + 1) + ' of ' + entry.batchSize;
 }
 
 export function updateFileProgress(fileId, progress, isSender, speedText = '') {
@@ -349,6 +376,7 @@ function createIncomingEntry(data, senderConnection) {
     senderName: String(data.senderNickname || 'Peer').slice(0, 80),
     senderColor: safeColor(data.senderColor),
     senderPeerId: typeof data.senderPeerId === 'string' ? data.senderPeerId : (senderConnection?.peer || ''),
+    ...validBatchFields(data),
     ackConnection: senderConnection,
     // offered -> accepted -> receiving, or declined / cancelled / expired
     phase: 'offered',
@@ -373,13 +401,40 @@ function createIncomingEntry(data, senderConnection) {
 function receiveFileOffer(data, senderConnection) {
   if (validateOffer(data) || state.incomingFiles[data.fileId] || state.closedFileIds.has(data.fileId)) return;
   const entry = createIncomingEntry(data, senderConnection);
+  if (entry.batchSize > 1) setBatchPosition(entry);
+  const batchKey = fileBatchKey(entry);
   setTransferStatus(entry.fileId, entry.senderName + ' wants to send you this file', 'uploading');
-  setTransferActions(entry.fileId, [
+  const actions = [
     { label: 'Accept', kind: 'primary', onClick: () => acceptIncomingFile(entry) },
     { label: 'Decline', onClick: () => declineIncomingFile(entry) }
-  ]);
-  playNotificationSound();
-  showToast(entry.senderName + ' wants to send you a file', 'info');
+  ];
+  if (entry.batchSize > 1) {
+    actions.push(
+      { label: 'Get all ' + entry.batchSize + ' files', kind: 'primary', onClick: () => decideFileBatch(entry, true) },
+      { label: 'Skip all', onClick: () => decideFileBatch(entry, false) }
+    );
+  }
+  setTransferActions(entry.fileId, actions);
+  if (batchKey && state.fileBatchDecisions.has(batchKey)) {
+    if (state.fileBatchDecisions.get(batchKey)) acceptIncomingFile(entry, true);
+    else declineIncomingFile(entry, true);
+  }
+  if (!batchKey || !state.seenFileBatches.has(batchKey)) {
+    if (batchKey) state.seenFileBatches.add(batchKey);
+    playNotificationSound();
+    showToast(entry.senderName + ' wants to send you ' + (entry.batchSize > 1 ? entry.batchSize + ' files' : 'a file'), 'info');
+  }
+}
+
+function decideFileBatch(entry, accepted) {
+  const key = fileBatchKey(entry);
+  if (!key || entry.phase !== 'offered') return;
+  state.fileBatchDecisions.set(key, accepted);
+  Object.values(state.incomingFiles).forEach(file => {
+    if (fileBatchKey(file) !== key) return;
+    if (accepted) acceptIncomingFile(file, file !== entry);
+    else declineIncomingFile(file, file !== entry);
+  });
 }
 
 function sendOfferResponse(entry, accepted) {
@@ -391,22 +446,22 @@ function sendOfferResponse(entry, accepted) {
   });
 }
 
-function acceptIncomingFile(entry) {
+function acceptIncomingFile(entry, automatically = false) {
   if (entry.phase !== 'offered' || entry.failed) return;
   entry.phase = 'accepted';
   // Storage is only touched once the file is accepted. A failure here surfaces on the first chunk.
   entry.ready = prepareIncomingStorage(entry);
   entry.ready.catch(() => {});
-  setTransferStatus(entry.fileId, 'Accepted. Waiting for the transfer to start…', 'uploading');
+  setTransferStatus(entry.fileId, automatically ? 'Accepted automatically (batch)' : 'Accepted. Waiting for the transfer to start…', 'uploading');
   setTransferActions(entry.fileId, [{ label: 'Cancel', kind: 'danger', onClick: () => cancelIncomingFile(entry) }]);
   sendOfferResponse(entry, true);
 }
 
-function declineIncomingFile(entry) {
+function declineIncomingFile(entry, automatically = false) {
   if (entry.phase !== 'offered' || entry.failed) return;
   entry.phase = 'declined';
   entry.failed = true;
-  setTransferStatus(entry.fileId, 'Declined', 'failed');
+  setTransferStatus(entry.fileId, automatically ? 'Skipped (batch)' : 'Declined', 'failed');
   setTransferActions(entry.fileId, []);
   sendOfferResponse(entry, false);
 }
@@ -680,6 +735,110 @@ function fileTargets() {
     : (isOpenConnection(state.conn) ? [state.conn] : []);
 }
 
+function stagedFileType(file) {
+  const mimeType = file.type.toLowerCase();
+  const extension = file.name.split('.').pop().toLowerCase();
+  if (mimeType.startsWith('image/') || /^(png|jpe?g|gif|webp|svg|avif|heic|bmp)$/.test(extension)) return ['🖼', 'Image'];
+  if (mimeType.startsWith('video/') || /^(mp4|webm|mov|mkv|avi)$/.test(extension)) return ['🎬', 'Video'];
+  if (mimeType.startsWith('audio/') || /^(mp3|wav|ogg|flac|m4a|aac)$/.test(extension)) return ['🎵', 'Audio'];
+  if (/zip|compressed|archive|tar|gzip/.test(mimeType) || /^(zip|rar|7z|tar|gz|bz2|xz)$/.test(extension)) return ['📦', 'Archive'];
+  if (mimeType.startsWith('text/') || /pdf|document|sheet|presentation/.test(mimeType)
+      || /^(pdf|txt|md|csv|docx?|xlsx?|pptx?|odt|ods|rtf)$/.test(extension)) return ['📄', 'Document'];
+  return ['📎', 'Other'];
+}
+
+export function renderStagedFiles() {
+  const tray = document.getElementById('selectedFile');
+  const sendButton = document.getElementById('sendFileBtn');
+  const files = state.stagedFiles;
+  if (sendButton) {
+    sendButton.disabled = files.length === 0;
+    sendButton.textContent = files.length > 1 ? 'Send ' + files.length + ' files' : 'Send file';
+  }
+  if (!tray) return;
+  tray.replaceChildren();
+  if (!files.length) {
+    tray.textContent = 'No files selected';
+    return;
+  }
+
+  const header = document.createElement('div');
+  header.className = 'file-tray-header';
+  const summary = document.createElement('span');
+  summary.textContent = files.length + (files.length === 1 ? ' file · ' : ' files · ')
+    + formatFileSize(files.reduce((total, file) => total + file.size, 0));
+  const clearButton = document.createElement('button');
+  clearButton.type = 'button';
+  clearButton.className = 'file-tray-clear';
+  clearButton.textContent = 'Clear all';
+  clearButton.addEventListener('click', clearStagedFiles);
+  header.append(summary, clearButton);
+
+  const list = document.createElement('ul');
+  list.className = 'staged-file-list';
+  files.forEach(file => {
+    const item = document.createElement('li');
+    item.className = 'staged-file';
+    const [symbol, type] = stagedFileType(file);
+    const icon = document.createElement('span');
+    icon.className = 'staged-file-icon';
+    icon.textContent = symbol;
+    icon.title = type;
+    icon.setAttribute('aria-hidden', 'true');
+    const info = document.createElement('div');
+    info.className = 'staged-file-info';
+    const name = document.createElement('span');
+    name.className = 'staged-file-name';
+    name.textContent = file.name;
+    name.title = file.name;
+    const size = document.createElement('span');
+    size.className = 'staged-file-size';
+    size.textContent = formatFileSize(file.size);
+    info.append(name, size);
+    const removeButton = document.createElement('button');
+    removeButton.type = 'button';
+    removeButton.className = 'staged-file-remove';
+    removeButton.textContent = '×';
+    removeButton.setAttribute('aria-label', 'Remove ' + file.name);
+    removeButton.addEventListener('click', () => {
+      const index = state.stagedFiles.indexOf(file);
+      if (index < 0) return;
+      state.stagedFiles.splice(index, 1);
+      renderStagedFiles();
+      const remainingButtons = tray.querySelectorAll('.staged-file-remove');
+      if (remainingButtons.length) remainingButtons[Math.min(index, remainingButtons.length - 1)].focus();
+      else document.getElementById('selectFileBtn')?.focus();
+    });
+    item.append(icon, info, removeButton);
+    list.appendChild(item);
+  });
+  tray.append(header, list);
+}
+
+function clearStagedFiles() {
+  state.stagedFiles = [];
+  renderStagedFiles();
+  document.getElementById('selectFileBtn')?.focus();
+}
+
+export function addStagedFiles(files) {
+  let limitNoticeShown = false;
+  Array.from(files || []).forEach(file => {
+    if (state.stagedFiles.some(existing => existing.name === file.name && existing.size === file.size
+        && existing.lastModified === file.lastModified)) {
+      showToast(file.name + ' is already in the list', 'info');
+    } else if (file.size > MAX_FILE_SIZE) {
+      showToast(file.name + ' is too large. Max allowed is ' + formatFileSize(MAX_FILE_SIZE), 'error');
+    } else if (state.stagedFiles.length >= MAX_BATCH_FILES) {
+      if (!limitNoticeShown) showToast('You can add up to ' + MAX_BATCH_FILES + ' files per batch.', 'info');
+      limitNoticeShown = true;
+    } else {
+      state.stagedFiles.push(file);
+    }
+  });
+  renderStagedFiles();
+}
+
 function activeOutgoingTransfer() {
   return Object.values(state.outgoingFiles).find(transfer => transfer && !transfer.completed && !transfer.failed) || null;
 }
@@ -687,36 +846,50 @@ function activeOutgoingTransfer() {
 function updateQueueNote(transfer) {
   const remaining = state.outgoingFileQueue.length;
   setQueueNote(transfer.fileId, remaining ? 'Queued (' + remaining + ' more)' : '');
+  const actions = [{ label: 'Cancel', kind: 'danger', onClick: () => cancelOutgoingTransfer(transfer) }];
+  if (remaining) actions.push({ label: 'Stop all', kind: 'danger', onClick: () => stopAllOutgoingFiles(transfer) });
+  setTransferActions(transfer.fileId, actions);
 }
 
 export function sendFile() {
-  const input = document.getElementById('fileInput');
-  if (!input?.files?.length) {
+  if (sendFiles(state.stagedFiles)) {
+    state.stagedFiles = [];
+    renderStagedFiles();
+  }
+}
+
+export function sendFiles(files) {
+  const selected = Array.from(files || []);
+  if (!selected.length) {
     showToast('Please select a file to send', 'info');
-    return;
+    return false;
   }
 
-  const files = Array.from(input.files);
-  const sendable = files.filter(file => file.size <= MAX_FILE_SIZE);
-  if (sendable.length < files.length) {
-    showToast('File too large. Max allowed is ' + formatFileSize(MAX_FILE_SIZE), 'error');
+  const sendable = selected.filter(file => {
+    if (file.size <= MAX_FILE_SIZE) return true;
+    showToast(file.name + ' is too large. Max allowed is ' + formatFileSize(MAX_FILE_SIZE), 'error');
+    return false;
+  });
+  if (sendable.length > MAX_BATCH_FILES) {
+    showToast('You can send up to ' + MAX_BATCH_FILES + ' files per batch.', 'info');
+    sendable.length = MAX_BATCH_FILES;
   }
-  if (!sendable.length) return;
+  if (!sendable.length) return false;
 
   if (!fileTargets().length) {
     showToast(state.isHost ? 'No one else is in the room to receive this file.' : 'You are not connected to a host', 'error');
-    return;
+    return false;
   }
 
-  input.value = '';
-  const selected = document.getElementById('selectedFile');
-  if (selected) selected.textContent = 'No file selected';
-
   // Files go out one at a time; the rest wait in the queue.
-  state.outgoingFileQueue.push(...sendable);
+  const batchId = createBatchId();
+  state.outgoingFileQueue.push(...sendable.map((file, batchIndex) => ({
+    file, batchId, batchIndex, batchSize: sendable.length
+  })));
   const active = activeOutgoingTransfer();
   if (active) updateQueueNote(active);
   else startNextQueuedFile();
+  return true;
 }
 
 function startNextQueuedFile() {
@@ -731,11 +904,15 @@ function startNextQueuedFile() {
   }
 }
 
-function offerFile(file, targets) {
+function offerFile(queuedFile, targets) {
+  const { file, batchId, batchIndex, batchSize } = queuedFile;
   const fileId = createFileId();
   const transfer = {
     file,
     fileId,
+    batchId,
+    batchIndex,
+    batchSize,
     name: file.name,
     size: file.size,
     mimeType: file.type || 'application/octet-stream',
@@ -761,7 +938,7 @@ function offerFile(file, targets) {
   state.outgoingFiles[fileId] = transfer;
 
   appendFileTransferMessage('outgoing', fileId, file.name, file.size, 0, true, state.myNickname, state.myColor);
-  setTransferActions(fileId, [{ label: 'Cancel', kind: 'danger', onClick: () => cancelOutgoingTransfer(transfer) }]);
+  setBatchPosition(transfer);
   updateQueueNote(transfer);
   updateOfferStatus(transfer);
   setGlobalProgress(0, '0 KB/s');
@@ -773,6 +950,9 @@ function offerFile(file, targets) {
     mimeType: transfer.mimeType,
     size: transfer.size,
     totalChunks: transfer.totalChunks,
+    batchId,
+    batchIndex,
+    batchSize,
     senderPeerId: state.peer?.id || '',
     senderNickname: state.myNickname,
     senderColor: state.myColor
@@ -979,6 +1159,11 @@ function cancelOutgoingTransfer(transfer) {
   endOutgoingTransfer(transfer);
 }
 
+function stopAllOutgoingFiles(transfer) {
+  state.outgoingFileQueue = [];
+  cancelOutgoingTransfer(transfer);
+}
+
 function endOutgoingTransfer(transfer) {
   clearTransferTimers(transfer);
   transfer.file = null;
@@ -1050,7 +1235,8 @@ function relayFileOffer(data, originConnection) {
     totalChunks: data.totalChunks,
     senderPeerId: originConnection.peer,
     senderNickname: originConnection.nickname || 'Peer',
-    senderColor: originConnection.color || '#60a5fa'
+    senderColor: originConnection.color || '#60a5fa',
+    ...validBatchFields(data)
   };
   trySend(originConnection, {
     type: 'file-offer-recipients',
@@ -1257,7 +1443,12 @@ export function cleanupFileTransfers() {
   state.incomingFiles = {};
   state.fileRelays = {};
   state.outgoingFileQueue = [];
+  state.stagedFiles = [];
+  state.fileBatchDecisions.clear();
+  state.seenFileBatches.clear();
   state.closedFileIds.clear();
+  document.querySelector('.chat-container')?.classList.remove('is-drop-target');
+  renderStagedFiles();
 }
 
 export function clearReceivedFiles() {

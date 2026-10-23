@@ -40,7 +40,7 @@ test('@network a declined file sends no chunks and never touches storage', async
 
     const hostCard = fileCard(host.page, 'decline-me.bin');
     await expect(hostCard.locator('.file-status')).toContainText('wants to send you this file', { timeout: 60_000 });
-    await hostCard.getByRole('button', { name: 'Decline' }).click();
+    await hostCard.getByRole('button', { name: 'Decline', exact: true }).click();
 
     await expect(hostCard.locator('.file-status')).toHaveText('Declined');
     await expect(fileCard(joiner.page, 'decline-me.bin').locator('.file-status')).toHaveText('Not accepted', { timeout: 30_000 });
@@ -69,7 +69,7 @@ test('@network cancelling mid-transfer stops both sides and cleans up storage', 
 
     const hostCard = fileCard(host.page, 'cancel-me.bin');
     await expect(hostCard.locator('.file-status')).toHaveText(/Receiving… [1-9]/, { timeout: 60_000 });
-    await fileCard(joiner.page, 'cancel-me.bin').getByRole('button', { name: 'Cancel' }).click();
+    await fileCard(joiner.page, 'cancel-me.bin').getByRole('button', { name: 'Cancel', exact: true }).click();
 
     await expect(fileCard(joiner.page, 'cancel-me.bin').locator('.file-status')).toHaveText('Cancelled');
     await expect(hostCard.locator('.file-status')).toHaveText('Cancelled by File Sender', { timeout: 30_000 });
