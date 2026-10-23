@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
 import {
+  acceptFile,
   closeContexts,
   joinRoom,
   startHost,
@@ -48,6 +49,7 @@ test('@network 2 MB file transfer completes once for sender and receiver', async
       buffer: expectedBytes
     });
     await joiner.page.locator('#sendFileBtn').evaluate(button => button.click());
+    await acceptFile(host.page, 'playwright-2mb.bin');
     await expect(joiner.page.locator('.file-message .file-status.success')).toHaveText('File sent', {
       timeout: 90_000
     });
@@ -89,6 +91,7 @@ test('@network SVG file has a download link but no inline image preview', async 
       buffer: Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"></svg>')
     });
     await joiner.page.locator('#sendFileBtn').evaluate(button => button.click());
+    await acceptFile(host.page, 'sample.svg');
 
     const receivedFile = host.page.locator('.file-message').filter({ hasText: 'sample.svg' });
     await expect(receivedFile.locator('.file-status')).toHaveText('File received', { timeout: 90_000 });

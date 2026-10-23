@@ -643,10 +643,12 @@ window.addEventListener('DOMContentLoaded', () => {
     attachmentBtn.addEventListener('click', () => fileInput.click());
   }
 
+  const describeSelectedFiles = files => (files.length === 1 ? files[0].name : `${files.length} files selected`);
+
   if (fileInput) {
     fileInput.addEventListener('change', () => {
       if (fileInput.files.length > 0 && selectedFileLabel) {
-        selectedFileLabel.textContent = fileInput.files[0].name;
+        selectedFileLabel.textContent = describeSelectedFiles(fileInput.files);
       }
     });
   }
@@ -809,8 +811,8 @@ window.addEventListener('DOMContentLoaded', () => {
 
       if (files && files.length > 0 && fileInput) {
         fileInput.files = files;
-        if (selectedFileLabel) selectedFileLabel.textContent = files[0].name;
-        showToast(`File selected: ${files[0].name}. Click Send File to transfer.`, 'info');
+        if (selectedFileLabel) selectedFileLabel.textContent = describeSelectedFiles(files);
+        showToast(`${files.length === 1 ? `File selected: ${files[0].name}` : `${files.length} files selected`}. Click Send File to transfer.`, 'info');
       }
     });
   }

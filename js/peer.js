@@ -27,7 +27,7 @@ import {
   syncMediaCalls,
   updateVideoTileNames
 } from './voice.js';
-import { handleIncomingFileChunk, handleFileAck, handleFilePeerLeft } from './files.js';
+import { handleFileMessage, handleFilePeerLeft } from './files.js';
 import { showScreenStream, clearScreenViewer, stopScreenShare, syncScreenCalls, handleScreenTakeoverRequest, handleScreenTakeoverResponse } from './screen.js';
 import { resetSession } from './session.js';
 
@@ -610,43 +610,8 @@ export function handlePeerData(c, data) {
     }
   } else if (data.type === 'system') {
     if (!state.isHost && c === state.conn) appendSystemMessage(data.message);
-  } else if (data.type === 'file-chunk') {
-    if (state.isHost) {
-      const existingTransfer = state.incomingFiles[data.fileId];
-      const recipients = existingTransfer
-        ? existingTransfer.deliveryPeerIds.filter(peerId => peerId !== state.peer?.id)
-        : state.connections.filter(p => p.peer !== c.peer && p.open !== false).map(p => p.peer);
-      const deliveryPeerIds = existingTransfer?.deliveryPeerIds || [state.peer?.id, ...recipients].filter(Boolean);
-      const relayedData = {
-        ...data,
-        senderPeerId: c.peer,
-        senderNickname: c.nickname || data.senderNickname,
-        senderColor: c.color || data.senderColor,
-        deliveryPeerIds
-      };
-
-      handleIncomingFileChunk(relayedData, c).then(accepted => {
-        if (!accepted) return;
-        state.connections.forEach(p => {
-          if (p.peer === c.peer || !recipients.includes(p.peer) || p.open === false) return;
-          try {
-            p.send(relayedData);
-          } catch (error) {
-            handleFileAck({
-              type: 'file-ack',
-              fileId: data.fileId,
-              index: data.index,
-              failed: true,
-              reason: 'Could not forward a file chunk.'
-            }, p);
-          }
-        });
-      });
-    } else {
-      handleIncomingFileChunk(data, c);
-    }
-  } else if (data.type === 'file-ack') {
-    handleFileAck(data, c);
+  } else if (String(data.type).startsWith('file-')) {
+    if (state.connections.includes(c)) handleFileMessage(data, c);
   } else if (data.type === 'typing' || data.type === 'typing-stop') {
     const payload = { ...data, nickname: c.nickname || data.nickname || 'Peer', fromPeerId: c.peer };
     if (data.type === 'typing') showTypingIndicator(payload.nickname, c.peer);
@@ -837,10 +802,8 @@ export async function connectToHost(roomCode, { reconnecting = false } = {}) {
         }
       } else if (data.type === 'system' && !state.isHost && conn === state.conn) {
         appendSystemMessage(data.message);
-      } else if (data.type === 'file-chunk') {
-        handleIncomingFileChunk(data, conn);
-      } else if (data.type === 'file-ack') {
-        handleFileAck(data);
+      } else if (String(data.type).startsWith('file-')) {
+        handleFileMessage(data, conn);
       } else if (data.type === 'typing') {
         showTypingIndicator(data.nickname, data.fromPeerId);
       } else if (data.type === 'typing-stop') {
